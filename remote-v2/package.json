@@ -1,5 +1,5 @@
 {
-  "name": "remote-button-v1",
+  "name": "remote-button-v2",
   "private": true,
   "scripts": {
     "start": "webpack serve --mode development --port 3003",
