@@ -19,6 +19,11 @@ export default function App() {
     setRemoteButton(() => Module);
   };
 
+  const handleReload = () => {
+    setNotification(false);
+    load('v2');
+  };
+
   useEffect(() => {
     load(active);
 
@@ -36,13 +41,42 @@ export default function App() {
     <main style={{ fontFamily: 'sans-serif' }}>
       <h1>POC Federación Versionada</h1>
       <p>Versión actual: <strong>{active}</strong></p>
-      <p>Notificación: <strong>{notification ? 'true' : 'false'}</strong></p>
-
-      <button onClick={() => load('v1')}>Cargar v1</button>
-      <button onClick={() => load('v2')}>Cargar v2</button>
 
       <hr />
       {RemoteButton ? <RemoteButton /> : <em>loading…</em>}
+
+      {notification && (
+        <div style={{
+          position: 'fixed',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          backgroundColor: 'white',
+          border: '2px solid #ccc',
+          borderRadius: '8px',
+          padding: '20px',
+          boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
+          zIndex: 1000,
+          minWidth: '300px',
+          textAlign: 'center'
+        }}>
+          <h3>Nueva versión disponible</h3>
+          <button 
+            onClick={handleReload}
+            style={{
+              backgroundColor: '#007bff',
+              color: 'white',
+              border: 'none',
+              padding: '10px 20px',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '16px'
+            }}
+          >
+            reload
+          </button>
+        </div>
+      )}
     </main>
   );
 }
