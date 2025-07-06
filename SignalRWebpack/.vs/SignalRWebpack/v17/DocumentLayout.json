@@ -1,0 +1,98 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Code\\microfrontends\\SignalRWebpack\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{8705147E-71D6-416C-A769-2C859A0CA17F}|SignalRWebpack\\SignalRWebpack.csproj|c:\\code\\microfrontends\\signalrwebpack\\signalrwebpack\\hubs\\chathub.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{8705147E-71D6-416C-A769-2C859A0CA17F}|SignalRWebpack\\SignalRWebpack.csproj|solutionrelative:signalrwebpack\\hubs\\chathub.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{8705147E-71D6-416C-A769-2C859A0CA17F}|SignalRWebpack\\SignalRWebpack.csproj|c:\\code\\microfrontends\\signalrwebpack\\signalrwebpack\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{8705147E-71D6-416C-A769-2C859A0CA17F}|SignalRWebpack\\SignalRWebpack.csproj|solutionrelative:signalrwebpack\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{8705147E-71D6-416C-A769-2C859A0CA17F}|SignalRWebpack\\SignalRWebpack.csproj|c:\\code\\microfrontends\\signalrwebpack\\signalrwebpack\\src\\index.html||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{8705147E-71D6-416C-A769-2C859A0CA17F}|SignalRWebpack\\SignalRWebpack.csproj|solutionrelative:signalrwebpack\\src\\index.html||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{8705147E-71D6-416C-A769-2C859A0CA17F}|SignalRWebpack\\SignalRWebpack.csproj|c:\\code\\microfrontends\\signalrwebpack\\signalrwebpack\\src\\index.ts||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}",
+      "RelativeMoniker": "D:0:0:{8705147E-71D6-416C-A769-2C859A0CA17F}|SignalRWebpack\\SignalRWebpack.csproj|solutionrelative:signalrwebpack\\src\\index.ts||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": -1,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{aa2115a1-9712-457b-9047-dbb71ca2cdd2}"
+            }
+          ]
+        },
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 0,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "ChatHub.cs",
+              "DocumentMoniker": "C:\\Code\\microfrontends\\SignalRWebpack\\SignalRWebpack\\Hubs\\ChatHub.cs",
+              "RelativeDocumentMoniker": "SignalRWebpack\\Hubs\\ChatHub.cs",
+              "ToolTip": "C:\\Code\\microfrontends\\SignalRWebpack\\SignalRWebpack\\Hubs\\ChatHub.cs",
+              "RelativeToolTip": "SignalRWebpack\\Hubs\\ChatHub.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAuwAYAAAAoAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-07-05T16:13:23.591Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "index.html",
+              "DocumentMoniker": "C:\\Code\\microfrontends\\SignalRWebpack\\SignalRWebpack\\src\\index.html",
+              "RelativeDocumentMoniker": "SignalRWebpack\\src\\index.html",
+              "ToolTip": "C:\\Code\\microfrontends\\SignalRWebpack\\SignalRWebpack\\src\\index.html",
+              "RelativeToolTip": "SignalRWebpack\\src\\index.html",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABQAAAAGAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001512|",
+              "WhenOpened": "2025-07-05T16:26:38.855Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "Program.cs",
+              "DocumentMoniker": "C:\\Code\\microfrontends\\SignalRWebpack\\SignalRWebpack\\Program.cs",
+              "RelativeDocumentMoniker": "SignalRWebpack\\Program.cs",
+              "ToolTip": "C:\\Code\\microfrontends\\SignalRWebpack\\SignalRWebpack\\Program.cs",
+              "RelativeToolTip": "SignalRWebpack\\Program.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAB8AAAAJAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-07-05T15:47:22.034Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "index.ts",
+              "DocumentMoniker": "C:\\Code\\microfrontends\\SignalRWebpack\\SignalRWebpack\\src\\index.ts",
+              "RelativeDocumentMoniker": "SignalRWebpack\\src\\index.ts",
+              "ToolTip": "C:\\Code\\microfrontends\\SignalRWebpack\\SignalRWebpack\\src\\index.ts",
+              "RelativeToolTip": "SignalRWebpack\\src\\index.ts",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA8AAAByAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003213|",
+              "WhenOpened": "2025-07-05T15:42:00.03Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

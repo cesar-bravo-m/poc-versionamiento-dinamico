@@ -19,9 +19,13 @@ export default function App() {
     setRemoteButton(() => Module);
   };
 
-  const handleReload = () => {
+  const handleLoadNewVersion = () => {
     setNotification(false);
     load('v2');
+  };
+
+  const handleStayCurrentVersion = () => {
+    setNotification(false);
   };
 
   useEffect(() => {
@@ -32,6 +36,8 @@ export default function App() {
       .build()
 
     connection.on('messageReceived', (username, message) => {
+      console.log("### username", username)
+      console.log("### message", message)
       setNotification(true);
     })
     connection.start().catch(err => console.error(err))
@@ -45,38 +51,107 @@ export default function App() {
       <hr />
       {RemoteButton ? <RemoteButton /> : <em>loading…</em>}
 
+      <div 
+        style={{
+          position: 'fixed',
+          top: '20px',
+          right: '20px',
+          width: '50px',
+          height: '50px',
+          borderRadius: '50%',
+          backgroundColor: notification ? '#ff4444' : 'lightblue',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'default',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+          zIndex: 1000,
+          transition: 'all 0.3s ease',
+          border: '2px solid white'
+        }}
+      >
+        {notification && (
+          <span style={{
+            color: 'white',
+            fontSize: '24px',
+            fontWeight: 'bold'
+          }}>
+            !
+          </span>
+        )}
+        {!notification && (
+          <span style={{
+            color: 'lightblue',
+            fontSize: '24px',
+            fontWeight: 'bold'
+          }}>
+            R
+          </span>
+        )}
+      </div>
+
       {notification && (
         <div style={{
           position: 'fixed',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
+          top: '80px',
+          right: '20px',
           backgroundColor: 'white',
           border: '2px solid #ccc',
           borderRadius: '8px',
           padding: '20px',
           boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
-          zIndex: 1000,
-          minWidth: '300px',
-          textAlign: 'center'
+          zIndex: 1001,
+          minWidth: '250px',
+          animation: 'slideIn 0.3s ease'
         }}>
-          <h3>Nueva versión disponible</h3>
-          <button 
-            onClick={handleReload}
-            style={{
-              backgroundColor: '#007bff',
-              color: 'white',
-              border: 'none',
-              padding: '10px 20px',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontSize: '16px'
-            }}
-          >
-            reload
-          </button>
+          <h3 style={{ margin: '0 0 15px 0', color: '#333' }}>Nueva versión disponible</h3>
+          <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+            <button 
+              onClick={handleStayCurrentVersion}
+              style={{
+                backgroundColor: '#6c757d',
+                color: 'white',
+                border: 'none',
+                padding: '8px 16px',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '14px'
+              }}
+            >
+              Mantener actual
+            </button>
+            <button 
+              onClick={handleLoadNewVersion}
+              style={{
+                backgroundColor: '#007bff',
+                color: 'white',
+                border: 'none',
+                padding: '8px 16px',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '14px'
+              }}
+            >
+              Cargar nueva
+            </button>
+          </div>
         </div>
       )}
+
+      <style>
+        {`
+          @keyframes slideIn {
+            from {
+              opacity: 0;
+              transform: translateY(-10px);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+        `}
+      </style>
     </main>
   );
 }
