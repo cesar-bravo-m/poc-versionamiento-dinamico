@@ -218,7 +218,7 @@ export default function CitasV2() {
       <div style={headerStyle}>
         <div>
           <h2 style={{ margin: 0, color: '#1f2937', fontSize: '28px', fontWeight: '700' }}>
-            ⚡ Citas v2
+            Citas v2
           </h2>
           <p style={{ margin: '4px 0 0 0', color: '#6b7280', fontSize: '14px' }}>
             Sistema avanzado de gestión médica
@@ -321,7 +321,7 @@ export default function CitasV2() {
 
       <div style={{ backgroundColor: 'rgba(255, 255, 255, 0.95)', borderRadius: '16px', padding: '24px', backdropFilter: 'blur(10px)', boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)' }}>
         <h3 style={{ color: '#1f2937', marginBottom: '24px', fontSize: '20px', fontWeight: '600' }}>
-          📅 Agenda Médica ({appointments.length} citas)
+          Agenda Médica ({appointments.length} citas)
         </h3>
         
         <div style={viewMode === 'grid' ? gridContainerStyle : {}}>
