@@ -5,7 +5,9 @@ import * as signalR from '@microsoft/signalr';
 
 export default function App() {
   const [RemoteButton, setRemoteButton] = useState(null);
+  const [RemoteCitas, setRemoteCitas] = useState(null);
   const [active, setActive] = useState('v1');
+  const [activeCitas, setActiveCitas] = useState('v1');
   const [notification, setNotification] = useState(false);
 
   const load = async (ver) => {
@@ -19,9 +21,19 @@ export default function App() {
     setRemoteButton(() => Module);
   };
 
+  const loadCitas = async (ver) => {
+    const Module = await loadRemoteModule({
+      url: ver === 'v1' ? 'http://localhost:3004/remoteEntry.js' : 'http://localhost:3005/remoteEntry.js',
+      scope: ver === 'v1' ? 'remoteCitas_v1' : 'remoteCitas_v2',
+      module: ver === 'v1' ? './Button_v1' : './Button_v2'
+    });
+    setRemoteCitas(() => Module);
+  };
+
   const handleLoadNewVersion = () => {
     setNotification(false);
     load('v2');
+    loadCitas('v2');
   };
 
   const handleStayCurrentVersion = () => {
@@ -30,6 +42,7 @@ export default function App() {
 
   useEffect(() => {
     load(active);
+    loadCitas(activeCitas);
 
     const connection = new signalR.HubConnectionBuilder()
       .withUrl('http://localhost:5018/hub')
@@ -46,9 +59,11 @@ export default function App() {
     <main style={{ fontFamily: 'sans-serif' }}>
       <h1>POC Federación Versionada</h1>
       <p>Admisión: <strong>{active}</strong></p>
+      <p>Citas: <strong>{activeCitas}</strong></p>
 
       <hr />
       {RemoteButton ? <RemoteButton /> : <em>loading…</em>}
+      {RemoteCitas ? <RemoteCitas /> : <em>loading…</em>}
 
       <div 
         style={{
@@ -104,21 +119,7 @@ export default function App() {
           animation: 'slideIn 0.3s ease'
         }}>
           <h3 style={{ margin: '0 0 15px 0', color: '#333' }}>Nueva versión disponible</h3>
-          <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-            {/* <button 
-              onClick={handleStayCurrentVersion}
-              style={{
-                backgroundColor: '#6c757d',
-                color: 'white',
-                border: 'none',
-                padding: '8px 16px',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '14px'
-              }}
-            >
-              Mantener actual
-            </button> */}
+          <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
             <button 
               onClick={handleLoadNewVersion}
               style={{
