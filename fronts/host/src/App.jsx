@@ -6,11 +6,17 @@ import * as signalR from '@microsoft/signalr';
 export default function App() {
   const [RemoteButton, setRemoteButton] = useState(null);
   const [RemoteCitas, setRemoteCitas] = useState(null);
-  const [active, setActive] = useState('v1');
-  const [activeCitas, setActiveCitas] = useState('v1');
+  const [active, setActive] = useState('');
+  const [activeCitas, setActiveCitas] = useState('');
   const [notification, setNotification] = useState(false);
+  const [activeTab, setActiveTab] = useState('admision');
+  const [versionesRecibidas, setVersionesRecibidas] = useState(null);
 
   const load = async (ver) => {
+    if (ver === '') {
+      setRemoteButton(<em>loading…</em>)
+      return;
+    }
     localStorage.setItem('remoteButtonVersion', ver);
     setActive(ver);
     const Module = await loadRemoteModule({
@@ -22,6 +28,10 @@ export default function App() {
   };
 
   const loadCitas = async (ver) => {
+    if (ver === '') {
+      setRemoteCitas(<em>loading…</em>)
+      return;
+    }
     const Module = await loadRemoteModule({
       url: ver === 'v1' ? 'http://localhost:3004/remoteEntry.js' : 'http://localhost:3005/remoteEntry.js',
       scope: ver === 'v1' ? 'remoteCitas_v1' : 'remoteCitas_v2',
@@ -32,8 +42,9 @@ export default function App() {
 
   const handleLoadNewVersion = () => {
     setNotification(false);
-    load('v2');
-    loadCitas('v2');
+    load(versionesRecibidas.admision);
+    loadCitas(versionesRecibidas.citas);
+    setActiveCitas(versionesRecibidas.citas);
   };
 
   const handleStayCurrentVersion = () => {
@@ -41,8 +52,16 @@ export default function App() {
   };
 
   useEffect(() => {
-    load(active);
-    loadCitas(activeCitas);
+    // Get versions from localhost:5018/versiones
+    fetch('http://localhost:5018/versiones/2411')
+      .then(response => response.json())
+      .then(data => {
+        setActive(data.admision);
+        setActiveCitas(data.citas);
+        load(data.admision);
+        loadCitas(data.citas);
+      })
+      .catch(error => console.error(error));
 
     const connection = new signalR.HubConnectionBuilder()
       .withUrl('http://localhost:5018/hub')
@@ -50,20 +69,79 @@ export default function App() {
 
     connection.on('nuevaVersionRecibida', (modulos) => {
       console.log("### modulos", modulos)
+      // This only notifies us that a new version is available, but we don't know which one
+      // We must check the versions again
+      fetch('http://localhost:5018/versiones/2411')
+        .then(response => response.json())
+        .then(data => {
+          setNotification(true);
+          setVersionesRecibidas(data);
+          // setActive(data.admision);
+          // setActiveCitas(data.citas);
+          // load(data.admision);
+          // loadCitas(data.citas);
+        })
+        .catch(error => console.error(error));
       setNotification(true);
     })
     connection.start().catch(err => console.error(err))
   }, []);
 
+  const tabStyle = {
+    display: 'flex',
+    borderBottom: '2px solid #ccc',
+    marginBottom: '20px',
+    backgroundColor: '#f5f5f5'
+  };
+
+  const tabButtonStyle = (isActive) => ({
+    flex: 1,
+    padding: '12px 20px',
+    border: 'none',
+    backgroundColor: isActive ? '#007bff' : 'transparent',
+    color: isActive ? 'white' : '#007bff',
+    cursor: 'pointer',
+    fontSize: '16px',
+    fontWeight: 'bold',
+    borderBottom: isActive ? '2px solid #007bff' : '2px solid transparent',
+    transition: 'all 0.3s ease'
+  });
+
+  const tabContentStyle = {
+    padding: '20px 0'
+  };
+
   return (
     <main style={{ fontFamily: 'sans-serif' }}>
       <h1>POC Federación Versionada</h1>
-      <p>Admisión: <strong>{active}</strong></p>
-      <p>Citas: <strong>{activeCitas}</strong></p>
 
-      <hr />
-      {RemoteButton ? <RemoteButton /> : <em>loading…</em>}
-      {RemoteCitas ? <RemoteCitas /> : <em>loading…</em>}
+      <div style={tabStyle}>
+        <button
+          style={tabButtonStyle(activeTab === 'admision')}
+          onClick={() => setActiveTab('admision')}
+        >
+          Admisión: {active}
+        </button>
+        <button
+          style={tabButtonStyle(activeTab === 'citas')}
+          onClick={() => setActiveTab('citas')}
+        >
+          Citas: {activeCitas}
+        </button>
+      </div>
+
+      <div style={tabContentStyle}>
+        {activeTab === 'admision' && (
+          <div>
+            {RemoteButton ? <RemoteButton /> : <em>loading…</em>}
+          </div>
+        )}
+        {activeTab === 'citas' && (
+          <div>
+            {RemoteCitas ? <RemoteCitas /> : <em>loading…</em>}
+          </div>
+        )}
+      </div>
 
       <div 
         style={{
