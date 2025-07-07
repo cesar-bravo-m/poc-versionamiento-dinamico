@@ -1,116 +1,244 @@
 import { useState, useEffect } from 'react'
-import * as signalR from '@microsoft/signalr';
+import * as signalR from '@microsoft/signalr'
 import './App.css'
 
-const hubConnection = new signalR.HubConnectionBuilder()
-  .withUrl('http://localhost:5018/hub')
-  .build()
+interface Version {
+  admision: string
+  citas: string
+}
 
-hubConnection.on('messageReceived', (message: string) => {
-  console.log("### MESSAGE RECEIVED ###", message);
-})
-
-hubConnection.start()
-  .then(async () => {
-    await hubConnection.send('newMessage', 123123, 'v1')
-  })
-  .catch( err => console.log("### err", err))
+interface ReceivedMessage {
+  message: string
+  timestamp: Date
+}
 
 function App() {
-  const [connection, setConnection] = useState<signalR.HubConnection | null>(null)
-  const [isConnected, setIsConnected] = useState(true)
-  const [lastMessage, setLastMessage] = useState<string>('')
+  const [versions, setVersions] = useState<Version>({ admision: '', citas: '' })
+  const [editedVersions, setEditedVersions] = useState<Version>({ admision: '', citas: '' })
   const [isLoading, setIsLoading] = useState(false)
+  const [hasChanges, setHasChanges] = useState(false)
+  const [error, setError] = useState<string>('')
+  const [lastMessage, setLastMessage] = useState<ReceivedMessage | null>(null)
 
-  // useEffect(() => {
-  //   const hubConnection = new signalR.HubConnectionBuilder()
-  //     .withUrl('http://localhost:5018/hub')
-  //     .build()
+  // Initialize SignalR connection
+  useEffect(() => {
+    const hubConnection = new signalR.HubConnectionBuilder()
+      .withUrl('http://localhost:5018/hub', {
+        withCredentials: false,
+        transport: signalR.HttpTransportType.WebSockets | signalR.HttpTransportType.LongPolling,
+      })
+      .withAutomaticReconnect()
+      .configureLogging(signalR.LogLevel.Information)
+      .build()
 
-  //   hubConnection.on('messageReceived', (message: string) => {
-  //     console.log("### MESSAGE RECEIVED ###", message);
-  //   })
+    hubConnection.on('nuevaVersionRecibida', (message: string[]) => {
+      console.log('Nueva versión recibida:', message)
+      setLastMessage({
+        message: message.join(', '),
+        timestamp: new Date()
+      })
+    })
 
-  //   hubConnection.start().catch( err => console.log("### err", err))
-
-  //   setConnection(hubConnection)
-
-  //   return () => {
-  //     hubConnection.stop()
-  //   }
-  // }, [])
-
-  const sendVersionMessage = async (username: string,version: string) => {
-    if (hubConnection && isConnected) {
-      setIsLoading(true)
+    const startConnection = async () => {
       try {
-        await hubConnection.send('newMessage', username, version)
-        console.log(`Sent version message: ${version}`)
+        await hubConnection.start()
+        console.log('SignalR connected successfully')
+        setError('')
       } catch (err) {
-        console.error('Error sending message: ', err)
-      } finally {
-        setIsLoading(false)
+        console.error('SignalR connection error:', err)
+        setError('Error connecting to SignalR: ' + (err instanceof Error ? err.message : 'Unknown error'))
+        
+        setTimeout(() => {
+          console.log('Retrying SignalR connection...')
+          startConnection()
+        }, 5000)
       }
-    } else {
-      console.error('SignalR connection not available')
     }
+
+    startConnection()
+
+    return () => {
+      hubConnection.stop()
+    }
+  }, [])
+
+  // Fetch current versions on component mount
+  useEffect(() => {
+    fetchVersions()
+  }, [])
+
+  const fetchVersions = async () => {
+    setIsLoading(true)
+    setError('')
+    try {
+      const response = await fetch('http://localhost:5018/versiones/1')
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      const data: Version = await response.json()
+      setVersions(data)
+      setEditedVersions(data)
+    } catch (err) {
+      setError('Error fetching versions: ' + (err instanceof Error ? err.message : 'Unknown error'))
+      console.error('Error fetching versions:', err)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleVersionChange = (field: keyof Version, value: string) => {
+    const newEditedVersions = { ...editedVersions, [field]: value }
+    setEditedVersions(newEditedVersions)
+    
+    // Check if there are changes compared to original versions
+    const hasChanges = newEditedVersions.admision !== versions.admision || 
+                      newEditedVersions.citas !== versions.citas
+    setHasChanges(hasChanges)
+  }
+
+  const updateVersions = async () => {
+    setIsLoading(true)
+    setError('')
+    try {
+      const response = await fetch('http://localhost:5018/versiones', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(editedVersions),
+      })
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      
+      // Update the original versions and reset change tracking
+      setVersions(editedVersions)
+      setHasChanges(false)
+      console.log('Versions updated successfully')
+    } catch (err) {
+      setError('Error updating versions: ' + (err instanceof Error ? err.message : 'Unknown error'))
+      console.error('Error updating versions:', err)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const resetChanges = () => {
+    setEditedVersions(versions)
+    setHasChanges(false)
   }
 
   return (
     <div className="dashboard-container">
       <div className="dashboard-header">
         <h1 className="dashboard-title">
-          <span className="title-icon">🚀</span>
-          Version Dashboard
+          Dashboard de versiones
         </h1>
-        <div className="connection-status">
-          <div className={`status-indicator ${isConnected ? 'connected' : 'disconnected'}`}>
-            <div className="status-dot"></div>
-            <span>{isConnected ? 'Conectado' : 'Desconectado'}</span>
-          </div>
-        </div>
       </div>
 
-      <div className="version-controls">
-        <div className="version-buttons">
-          <button 
-            className="version-btn v1-btn"
-            onClick={() => sendVersionMessage('versionchange', 'v1')}
-            disabled={!isConnected || isLoading}
-          >
-            <div className="btn-content">
-              <span className="btn-icon">📦</span>
-              <span className="btn-text">Cargar V1</span>
-            </div>
-            {isLoading && <div className="loading-spinner"></div>}
-          </button>
-
-          <button 
-            className="version-btn v2-btn"
-            onClick={() => sendVersionMessage('versionchange', 'v2')}
-            disabled={!isConnected || isLoading}
-          >
-            <div className="btn-content">
-              <span className="btn-icon">⚡</span>
-              <span className="btn-text">Cargar V2</span>
-            </div>
-            {isLoading && <div className="loading-spinner"></div>}
-          </button>
-        </div>
-      </div>
-
-      {lastMessage && (
-        <div className="message-display">
-          <h3>Último mensaje enviado:</h3>
-          <div className="message-content">
-            <span className="message-text">{lastMessage}</span>
-          </div>
+      {error && (
+        <div className="error-message">
+          <span className="error-icon">⚠️</span>
+          {error}
         </div>
       )}
 
-      <div className="dashboard-footer">
-        <p>Selecciona una versión para cargar a través de SignalR</p>
+      <div className="version-table-container">
+        <table className="version-table">
+          <thead>
+            <tr>
+              <th>Componente</th>
+              <th>Versión Actual</th>
+              <th>Editar</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td className="component-name">Admisión</td>
+              <td className="current-version">{versions.admision}</td>
+              <td className="edit-cell">
+                <input
+                  type="text"
+                  value={editedVersions.admision}
+                  onChange={(e) => handleVersionChange('admision', e.target.value)}
+                  placeholder="Ingresa nueva versión"
+                  disabled={isLoading}
+                  className="version-input"
+                />
+              </td>
+            </tr>
+            <tr>
+              <td className="component-name">Citas</td>
+              <td className="current-version">{versions.citas}</td>
+              <td className="edit-cell">
+                <input
+                  type="text"
+                  value={editedVersions.citas}
+                  onChange={(e) => handleVersionChange('citas', e.target.value)}
+                  placeholder="Ingresa nueva versión"
+                  disabled={isLoading}
+                  className="version-input"
+                />
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
+
+      <div className="action-buttons">
+        <button
+          className="update-btn"
+          onClick={updateVersions}
+          disabled={!hasChanges || isLoading}
+        >
+          {isLoading ? (
+            <>
+              <div className="loading-spinner"></div>
+              Actualizando...
+            </>
+          ) : (
+            <>
+              <span className="btn-icon">💾</span>
+              Actualizar versiones
+            </>
+          )}
+        </button>
+
+        {hasChanges && (
+          <button
+            className="reset-btn"
+            onClick={resetChanges}
+            disabled={isLoading}
+          >
+            <span className="btn-icon">↩️</span>
+            Descartar cambios
+          </button>
+        )}
+      </div>
+
+      {lastMessage && (
+        <div className="messages-section">
+          <h3 className="messages-title">Último mensaje del websocket</h3>
+          <div className="messages-container">
+            <div className="message-item">
+              <div className="message-content">
+                <span className="message-text">{lastMessage.message}</span>
+              </div>
+              <div className="message-timestamp">
+                {lastMessage.timestamp.toLocaleString('es-ES', {
+                  day: '2-digit',
+                  month: '2-digit',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  second: '2-digit'
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
