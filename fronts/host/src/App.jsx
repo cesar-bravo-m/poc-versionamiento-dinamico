@@ -45,7 +45,7 @@ export default function App() {
   return (
     <main style={{ fontFamily: 'sans-serif' }}>
       <h1>POC Federación Versionada</h1>
-      <p>Versión actual: <strong>{active}</strong></p>
+      <p>Admisión: <strong>{active}</strong></p>
 
       <hr />
       {RemoteButton ? <RemoteButton /> : <em>loading…</em>}
