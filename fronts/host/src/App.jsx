@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { loadRemoteModule } from './remoteLoader';
 import * as signalR from '@microsoft/signalr';
+import LocalTable from './LocalTable';
 
 
 export default function App() {
@@ -247,6 +248,9 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* Tabla de prueba usando wa-sqlite */}
+      <LocalTable />
 
       <style>
         {`
