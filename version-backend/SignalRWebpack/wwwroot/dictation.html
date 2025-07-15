@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Phone Dictation</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js"></script>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    textarea { width: 100%; height: 120px; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <h1>Dictar texto</h1>
+  <textarea id="status"></textarea>
+  <button id="start">Iniciar</button>
+  <button id="stop">Detener</button>
+  <textarea id="text"></textarea>
+<script>
+  const connection = new signalR.HubConnectionBuilder().withUrl('/hub').build();
+  connection.start().catch(err => console.error(err));
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  console.log("### SpeechRecognition", SpeechRecognition);
+  // debugger
+  const recognizer = new SpeechRecognition();
+  recognizer.lang = 'es-CL';
+  recognizer.continuous = true;
+  recognizer.interimResults = false;
+  recognizer.onresult = ev => {
+    const txt = Array.from(ev.results).map(r => r[0].transcript).join(' ');
+    document.getElementById('text').value = txt;
+    connection.invoke('SendDictation', txt);
+  };
+    document.getElementById('start').onclick = () => {
+        document.getElementById('status').textContent = 'start'
+        recognizer.start()
+    }    ;
+    document.getElementById('stop').onclick = () => {
+        document.getElementById('status').textContent = 'stop'
+        recognizer.stop();
+    };
+</script>
+</body>
+</html>
