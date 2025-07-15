@@ -118,7 +118,7 @@ export default function App() {
     padding: '20px 0'
   };
 
-  const mobileUrl = `http://${window.location.hostname}:5018/dictation.html`;
+  const mobileUrl = `http://192.168.0.8:5018/dictation.html`;
 
   return (
     <main style={{ fontFamily: 'sans-serif' }}>
