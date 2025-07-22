@@ -1,11 +1,14 @@
 import SQLiteESMFactory from 'wa-sqlite/dist/wa-sqlite.mjs'
 import * as SQLite from 'wa-sqlite'
 
+// Array to store all connected ports
 const ports = []
 
+// Database instance will be shared across all connections
 let db = null
 let sqlite3 = null
 
+// Initialize database once
 const initializeDatabase = async () => {
     if (!db) {
         const module = await SQLiteESMFactory()
@@ -67,10 +70,12 @@ const initializeDatabase = async () => {
     }
 }
 
+// Handle SharedWorker connections
 self.addEventListener('connect', async (event) => {
     const port = event.ports[0]
     ports.push(port)
     
+    // Initialize database when first connection is made
     await initializeDatabase()
     
     port.addEventListener('message', async (event) => {
@@ -119,6 +124,7 @@ self.addEventListener('connect', async (event) => {
                 })
             }
         } catch (e) {
+            console.log("### SharedWorker error", e)
             port.postMessage({type: 'error', message: e.message})
         }
     })

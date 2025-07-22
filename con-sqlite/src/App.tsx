@@ -24,7 +24,7 @@ type Referral = {
 }
 
 function App() {
-  const [worker, setWorker] = useState<Worker | null>(null)
+  const [sqlWorker, setSqlWorker] = useState<SharedWorker | null>(null)
   const [activeTabId, setActiveTabId] = useState<string | null>(null)
   const [tabId, setTabId] = useState<string | null>(null)
   const [parametros, setParametros] = useState<Parametro[]>([])
@@ -73,8 +73,9 @@ function App() {
   }, [])
 
   useEffect(() => {
-    const worker = new Worker(new URL('./worker.js', import.meta.url), { type: 'module' })
-    worker.addEventListener('message', (event) => {
+    const worker = new SharedWorker(new URL('./sqlWorker.js', import.meta.url), { type: 'module' })
+    
+    worker.port.addEventListener('message', (event) => {
       if (event.data.type === 'derivacionesObtenidas') {
         const newReferrals: Referral[] = []
         for (const row of event.data.derivaciones) {
@@ -107,7 +108,6 @@ function App() {
         }
         setParametros(newParametros)
       } else if (event.data.type === 'derivacionActualizada') {
-        // Update the local referrals state with the updated data
         setReferrals(prev => prev.map(ref => 
           ref.id === event.data.id 
             ? {
@@ -126,7 +126,9 @@ function App() {
         setEditingReferral(null)
       }
     })
-    setWorker(worker)
+    
+    worker.port.start()
+    setSqlWorker(worker)
   }, [tabId, activeTabId])
 
   const getEstadoColor = (estado: string) => {
@@ -140,11 +142,11 @@ function App() {
   }
 
   const obtenerDerivaciones = () => {
-    worker?.postMessage({type: 'obtenerDerivaciones' })
+    sqlWorker?.port.postMessage({type: 'obtenerDerivaciones' })
   }
 
   const obtenerParametros = () => {
-    worker?.postMessage({type: 'obtenerParametros' })
+    sqlWorker?.port.postMessage({type: 'obtenerParametros' })
   }
 
   const startEditing = (referral: Referral) => {
@@ -158,8 +160,8 @@ function App() {
   }
 
   const saveChanges = () => {
-    if (editingReferral && worker) {
-      worker.postMessage({
+    if (editingReferral && sqlWorker) {
+      sqlWorker.port.postMessage({
         type: 'actualizarDerivacion',
         id: editingReferral.id,
         estado: editingReferral.estado,
@@ -178,17 +180,16 @@ function App() {
     }
   }
 
-  if (worker && referrals.length === 0) {
+  if (sqlWorker && referrals.length === 0) {
     obtenerDerivaciones()
   }
 
-  if (worker && parametros.length === 0) {
+  if (sqlWorker && parametros.length === 0) {
     obtenerParametros()
   }
 
   return (
     <div className="app-container">
-      {/* Header */}
       <div className="header">
         <div className="header-left">
           <h1>Derivación Contralor</h1>
@@ -201,11 +202,8 @@ function App() {
         </div>
       </div>
 
-      {/* Main Content */}
       <div className="main-content">
-        {/* Left Sidebar */}
         <div className="sidebar">
-          {/* System Parameters */}
           <div className="sidebar-section">
             <h3>PARÁMETROS DEL NODO</h3>
             <div className="parameters-list">
@@ -218,7 +216,6 @@ function App() {
             </div>
           </div>
 
-          {/* Operation Queue */}
           <div className="sidebar-section">
             <h3>OPERACIONES</h3>
             <div className="operation-queue">
@@ -232,7 +229,6 @@ function App() {
           </div>
         </div>
 
-        {/* Main Content Area */}
         <div className="content-area">
           <div className="content-body">
             <div className="referrals-list">
