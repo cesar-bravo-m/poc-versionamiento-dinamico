@@ -49,7 +49,7 @@ INSERT INTO derivaciones (
     rutFuncionario
 ) VALUES
 (1, 'Cardiología', 'CESFAM Pichilemu', 'Hospital Regional', '2025-01-15', 'Nueva',
- 'Paciente con síntomas cardíacos requiere evaluación urgente', 'María González', '12.345.678-9', 'Dr. Carlos López', '11.222.333-4'),
+ 'Prioridad alta', 'María González', '12.345.678-9', 'Dr. Carlos López', '11.222.333-4'),
 
 (2, 'Oftalmología', 'CESFAM La Estrella', 'Hospital de Especialidades', '2025-01-14', 'Enviada',
  'Control post-operatorio de cataratas', 'Pedro Ramírez', '98.765.432-1', 'Dra. Ana Morales', '22.333.444-5'),

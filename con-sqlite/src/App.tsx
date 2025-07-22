@@ -25,11 +25,12 @@ type Referral = {
 
 function App() {
   const [worker, setWorker] = useState<Worker | null>(null)
-  const [results, setResults] = useState<Parametro[]>([])
   const [activeTabId, setActiveTabId] = useState<string | null>(null)
   const [tabId, setTabId] = useState<string | null>(null)
   const [parametros, setParametros] = useState<Parametro[]>([])
   const [referrals, setReferrals] = useState<Referral[]>([])
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [editingReferral, setEditingReferral] = useState<Referral | null>(null)
 
   const thisTabIsActive = tabId === activeTabId
 
@@ -105,17 +106,35 @@ function App() {
           newParametros.push(parametro)
         }
         setParametros(newParametros)
+      } else if (event.data.type === 'derivacionActualizada') {
+        // Update the local referrals state with the updated data
+        setReferrals(prev => prev.map(ref => 
+          ref.id === event.data.id 
+            ? {
+                ...ref,
+                estado: event.data.estado,
+                observaciones: event.data.observaciones,
+                nombrePaciente: event.data.nombrePaciente,
+                rutPaciente: event.data.rutPaciente,
+                nombreFuncionario: event.data.nombreFuncionario,
+                rutFuncionario: event.data.rutFuncionario
+              }
+            : ref
+        ))
+        // Exit edit mode
+        setEditingId(null)
+        setEditingReferral(null)
       }
     })
     setWorker(worker)
-  }, [results, tabId, activeTabId])
+  }, [tabId, activeTabId])
 
   const getEstadoColor = (estado: string) => {
     switch (estado) {
       case 'Nueva': return '#f59e0b';
       case 'Enviada': return '#3b82f6';
       case 'Atendida': return '#10b981';
-      case 'Rechazaao': return '#ef4444';
+      case 'Rechazada': return '#ef4444';
       default: return '#6b7280';
     }
   }
@@ -126,6 +145,37 @@ function App() {
 
   const obtenerParametros = () => {
     worker?.postMessage({type: 'obtenerParametros' })
+  }
+
+  const startEditing = (referral: Referral) => {
+    setEditingId(referral.id)
+    setEditingReferral({ ...referral })
+  }
+
+  const cancelEditing = () => {
+    setEditingId(null)
+    setEditingReferral(null)
+  }
+
+  const saveChanges = () => {
+    if (editingReferral && worker) {
+      worker.postMessage({
+        type: 'actualizarDerivacion',
+        id: editingReferral.id,
+        estado: editingReferral.estado,
+        observaciones: editingReferral.observaciones,
+        nombrePaciente: editingReferral.nombrePaciente,
+        rutPaciente: editingReferral.rutPaciente,
+        nombreFuncionario: editingReferral.nombreFuncionario,
+        rutFuncionario: editingReferral.rutFuncionario
+      })
+    }
+  }
+
+  const updateEditingField = (field: keyof Referral, value: string) => {
+    if (editingReferral) {
+      setEditingReferral(prev => prev ? { ...prev, [field]: value } : null)
+    }
   }
 
   if (worker && referrals.length === 0) {
@@ -144,8 +194,9 @@ function App() {
           <h1>Derivación Contralor</h1>
         </div>
         <div className="header-right">
-          <div className="connection-status">
-            Dr. Roberto Silva
+          <div>
+            { thisTabIsActive && <div className="connection-status-active">TAB ACTIVA</div> }
+            { !thisTabIsActive && <div className="connection-status-inactive">TAB DESCONECTADA</div> }
           </div>
         </div>
       </div>
@@ -154,14 +205,6 @@ function App() {
       <div className="main-content">
         {/* Left Sidebar */}
         <div className="sidebar">
-          {/* Active Status */}
-          <div className="sidebar-section">
-            <h3>ESTADO DE LA TAB</h3>
-            <div className={`status-indicator ${thisTabIsActive ? 'active' : 'inactive'}`}>
-              ({thisTabIsActive ? 'Activo' : 'Inactivo'})
-            </div>
-          </div>
-
           {/* System Parameters */}
           <div className="sidebar-section">
             <h3>PARÁMETROS DEL NODO</h3>
@@ -193,62 +236,153 @@ function App() {
         <div className="content-area">
           <div className="content-body">
             <div className="referrals-list">
-              {referrals.map((referral) => (
-                <div key={referral.id} className="referral-card">
-                  <div className="referral-header">
-                    <div className="referral-title">
-                      <h3>{referral.especialidad}</h3>
-                      <span 
-                        className="status-badge" 
-                        style={{ backgroundColor: getEstadoColor(referral.estado) }}
-                      >
-                        {referral.estado}
-                      </span>
+              {referrals.map((referral) => {
+                const isEditing = editingId === referral.id
+                const displayReferral = isEditing ? editingReferral! : referral
+                
+                return (
+                  <div key={referral.id} className="referral-card">
+                    <div className="referral-header">
+                      <div className="referral-title">
+                        <h3>{displayReferral.especialidad}</h3>
+                        {isEditing ? (
+                          <select 
+                            value={displayReferral.estado}
+                            onChange={(e) => updateEditingField('estado', e.target.value)}
+                            className="status-edit"
+                          >
+                            <option value="Nueva">Nueva</option>
+                            <option value="Enviada">Enviada</option>
+                            <option value="Atendida">Atendida</option>
+                            <option value="Rechazada">Rechazada</option>
+                          </select>
+                        ) : (
+                          <span 
+                            className="status-badge" 
+                            style={{ backgroundColor: getEstadoColor(displayReferral.estado) }}
+                          >
+                            {displayReferral.estado}
+                          </span>
+                        )}
+                      </div>
+                      <div className="referral-actions">
+                        <div className="referral-date">{displayReferral.fecha}</div>
+                        {!isEditing && (
+                          <button 
+                            className="edit-button"
+                            onClick={() => startEditing(referral)}
+                            title="Editar derivación"
+                          >
+                            ✏️
+                          </button>
+                        )}
+                      </div>
                     </div>
-                    <div className="referral-date">{referral.fecha}</div>
+                    
+                    <div className="referral-body">
+                      <div className="referral-row">
+                        <div className="referral-field">
+                          <label>Paciente:</label>
+                          {isEditing ? (
+                            <input
+                              type="text"
+                              value={displayReferral.nombrePaciente}
+                              onChange={(e) => updateEditingField('nombrePaciente', e.target.value)}
+                              className="edit-input"
+                            />
+                          ) : (
+                            <span>{displayReferral.nombrePaciente}</span>
+                          )}
+                        </div>
+                        <div className="referral-field">
+                          <label>RUT:</label>
+                          {isEditing ? (
+                            <input
+                              type="text"
+                              value={displayReferral.rutPaciente}
+                              onChange={(e) => updateEditingField('rutPaciente', e.target.value)}
+                              className="edit-input"
+                            />
+                          ) : (
+                            <span>{displayReferral.rutPaciente}</span>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="referral-row">
+                        <div className="referral-field">
+                          <label>Origen:</label>
+                          <span>{displayReferral.nodoOrigen}</span>
+                        </div>
+                        <div className="referral-field">
+                          <label>Destino:</label>
+                          <span>{displayReferral.nodoDestino}</span>
+                        </div>
+                      </div>
+                      
+                      <div className="referral-row">
+                        <div className="referral-field">
+                          <label>Funcionario:</label>
+                          {isEditing ? (
+                            <input
+                              type="text"
+                              value={displayReferral.nombreFuncionario}
+                              onChange={(e) => updateEditingField('nombreFuncionario', e.target.value)}
+                              className="edit-input"
+                            />
+                          ) : (
+                            <span>{displayReferral.nombreFuncionario}</span>
+                          )}
+                        </div>
+                        <div className="referral-field">
+                          <label>RUT Funcionario:</label>
+                          {isEditing ? (
+                            <input
+                              type="text"
+                              value={displayReferral.rutFuncionario}
+                              onChange={(e) => updateEditingField('rutFuncionario', e.target.value)}
+                              className="edit-input"
+                            />
+                          ) : (
+                            <span>{displayReferral.rutFuncionario}</span>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="referral-observations">
+                        <label>Observaciones:</label>
+                        {isEditing ? (
+                          <textarea
+                            value={displayReferral.observaciones}
+                            onChange={(e) => updateEditingField('observaciones', e.target.value)}
+                            className="edit-textarea"
+                            rows={3}
+                          />
+                        ) : (
+                          <p>{displayReferral.observaciones}</p>
+                        )}
+                      </div>
+                      
+                      {isEditing && (
+                        <div className="edit-actions">
+                          <button 
+                            className="save-button"
+                            onClick={saveChanges}
+                          >
+                            💾 Guardar
+                          </button>
+                          <button 
+                            className="cancel-button"
+                            onClick={cancelEditing}
+                          >
+                            ❌ Descartar cambios
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  
-                  <div className="referral-body">
-                    <div className="referral-row">
-                      <div className="referral-field">
-                        <label>Paciente:</label>
-                        <span>{referral.nombrePaciente}</span>
-                      </div>
-                      <div className="referral-field">
-                        <label>RUT:</label>
-                        <span>{referral.rutPaciente}</span>
-                      </div>
-                    </div>
-                    
-                    <div className="referral-row">
-                      <div className="referral-field">
-                        <label>Origen:</label>
-                        <span>{referral.nodoOrigen}</span>
-                      </div>
-                      <div className="referral-field">
-                        <label>Destino:</label>
-                        <span>{referral.nodoDestino}</span>
-                      </div>
-                    </div>
-                    
-                    <div className="referral-row">
-                      <div className="referral-field">
-                        <label>Funcionario:</label>
-                        <span>{referral.nombreFuncionario}</span>
-                      </div>
-                      <div className="referral-field">
-                        <label>RUT Funcionario:</label>
-                        <span>{referral.rutFuncionario}</span>
-                      </div>
-                    </div>
-                    
-                    <div className="referral-observations">
-                      <label>Observaciones:</label>
-                      <p>{referral.observaciones}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
         </div>
