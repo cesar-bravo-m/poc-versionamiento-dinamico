@@ -7,13 +7,20 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddSignalR();
 builder.Services.AddControllers();
 builder.Services.AddSingleton<VersionesService>();
+builder.Services.AddSingleton<ParametrosService>();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(name: MyAllowSpecificOrigins,
         policy =>
         {
             policy
-            .WithOrigins("http://localhost:3001", "http://localhost:5018", "http://localhost:5173", "http://localhost:5174")
+            .WithOrigins(
+                "http://localhost:3001",
+                "http://localhost:5018",
+                "http://localhost:5173",
+                "http://localhost:5174",
+                "http://localhost:5175"
+            )
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();
