@@ -243,6 +243,26 @@ body {
   background: linear-gradient(90deg, #fef2f2 0%, #fee2e2 100%);
 }
 
+.api-call-item.parameter-call {
+  border: 2px solid #0ea5e9;
+  background: #f0f9ff;
+}
+
+.api-call-item.parameter-call.pending {
+  border-color: #0ea5e9;
+  background: linear-gradient(90deg, #f0f9ff 0%, #e0f2fe 100%);
+}
+
+.api-call-item.parameter-call.completed {
+  border-color: #10b981;
+  background: linear-gradient(90deg, #f0fdf4 0%, #dcfce7 100%);
+}
+
+.api-call-item.parameter-call.failed {
+  border-color: #ef4444;
+  background: linear-gradient(90deg, #fef2f2 0%, #fee2e2 100%);
+}
+
 .api-call-content {
   display: flex;
   flex-direction: column;
@@ -322,6 +342,14 @@ body {
   margin: 0.25rem 0;
 }
 
+.api-call-parameter-info {
+  color: #0ea5e9;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-style: italic;
+  margin: 0.25rem 0;
+}
+
 .api-call-referrals-list {
   margin: 0.5rem 0;
   padding: 0.5rem;
@@ -340,6 +368,58 @@ body {
 
 .api-call-referral-item:last-child {
   border-bottom: none;
+}
+
+/* Waiting Indicator */
+.waiting-indicator {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-left: 3px solid #6b7280;
+  border-radius: 8px;
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+  transition: all 0.3s ease;
+}
+
+.waiting-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.waiting-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.waiting-icon {
+  font-size: 1rem;
+}
+
+.waiting-text {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.waiting-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding-left: 1.5rem;
+}
+
+.waiting-count {
+  font-weight: 500;
+  color: #1e293b;
+  font-size: 0.8rem;
+}
+
+.waiting-timestamp {
+  color: #94a3b8;
+  font-size: 0.7rem;
+  font-family: monospace;
 }
 
 .no-api-calls {

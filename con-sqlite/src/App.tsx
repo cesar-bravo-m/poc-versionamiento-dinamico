@@ -31,10 +31,11 @@ function App() {
   const [referrals, setReferrals] = useState<Referral[]>([])
   const [editingId, setEditingId] = useState<number | null>(null)
   const [editingReferral, setEditingReferral] = useState<Referral | null>(null)
-  const [apiCalls, setApiCalls] = useState<{id: string, referralIds: number[], timestamp: Date, status: 'pending' | 'completed' | 'failed', isBundled?: boolean, totalEdits?: number}[]>([])
+  const [apiCalls, setApiCalls] = useState<{id: string, referralIds?: number[], timestamp: Date, status: 'pending' | 'completed' | 'failed', isBundled?: boolean, totalEdits?: number, type?: 'referrals' | 'parameters'}[]>([])
   const [expandedReferrals, setExpandedReferrals] = useState<Set<number>>(new Set([1, 2, 3]))
   const [globalTimeout, setGlobalTimeout] = useState<number | null>(null)
   const [pendingReferrals, setPendingReferrals] = useState<Set<number>>(new Set()) // All referrals with pending changes
+  const [waitingForSync, setWaitingForSync] = useState<{timestamp: Date, referralCount: number} | null>(null)
 
   const thisTabIsActive = tabId === activeTabId
 
@@ -48,17 +49,14 @@ function App() {
       .withUrl('http://localhost:5018/hub')
       .build()
     
-    connection.on('parametrosCambiados', (parametros) => {
-      // {usaParametro1: '0', usaParametro2: '0', usaParametro3: '0'}
-      // These must be converted to a Parametro[]
-      const parametrosRecibidos = Object.entries(parametros).map(([descripcion, valor]) => ({
-        descripcion,
-        nodo: 0,
-        valor: valor === '1' ? 1 : 0,
-        activo: true
-      }))
-      setParametros(parametrosRecibidos)
-      console.log("### parametrosCambiados", parametrosRecibidos);
+    connection.on('parametrosCambiados', async (parametros) => {
+      console.log("### parametrosCambiados event received", parametros);
+      
+      // Create parameter update call in persistence queue
+      createParameterUpdateCall()
+      
+      // Fetch fresh parameters from endpoint
+      await fetchParametrosFromEndpoint()
     })
 
     connection.start().catch(err => console.error(err));
@@ -133,6 +131,9 @@ function App() {
         // Exit edit mode
         setEditingId(null)
         setEditingReferral(null)
+      } else if (event.data.type === 'parametrosActualizados') {
+        console.log('Parameters updated in database:', event.data.parametros)
+        // The parameters have already been updated via the fetchParametrosFromEndpoint function
       }
     })
     
@@ -154,8 +155,82 @@ function App() {
     sqlWorker?.port.postMessage({type: 'obtenerDerivaciones' })
   }
 
+  const fetchParametrosFromEndpoint = async () => {
+    try {
+      const response = await fetch('http://localhost:5018/parametros/1')
+      const data = await response.json()
+      
+      // Convert endpoint response to Parametro objects
+      const endpointParametros: Parametro[] = Object.entries(data).map(([descripcion, valor]) => ({
+        descripcion,
+        nodo: 1,
+        valor: valor === '1' ? 1 : 0,
+        activo: true
+      }))
+      
+      console.log('Fetched parameters from endpoint:', endpointParametros)
+      
+             // Compare with current parameters
+       const currentValues = parametros.map(p => `${p.descripcion}:${p.valor}`).sort()
+       const endpointValues = endpointParametros.map(p => `${p.descripcion}:${p.valor}`).sort()
+       
+       const parametersChanged = JSON.stringify(currentValues) !== JSON.stringify(endpointValues)
+      
+      if (parametersChanged) {
+        console.log('Parameters changed, updating database and UI')
+        
+        // Update local state immediately
+        setParametros(endpointParametros)
+        
+        // Update database via worker
+        if (sqlWorker) {
+          sqlWorker.port.postMessage({
+            type: 'actualizarParametros',
+            parametros: endpointParametros
+          })
+        }
+      } else {
+        console.log('Parameters unchanged')
+      }
+      
+      return endpointParametros
+    } catch (error) {
+      console.error('Error fetching parameters:', error)
+      return null
+    }
+  }
+
   const obtenerParametros = () => {
     sqlWorker?.port.postMessage({type: 'obtenerParametros' })
+  }
+
+  const createParameterUpdateCall = () => {
+    if (!thisTabIsActive) return
+    
+    const callId = Math.random().toString(36).substr(2, 9)
+    const newCall = {
+      id: callId,
+      timestamp: new Date(),
+      status: 'pending' as const,
+      type: 'parameters' as const,
+      isBundled: false,
+      totalEdits: 1
+    }
+    
+    setApiCalls(prev => [...prev, newCall])
+    
+    const timeout = Math.random() * 2000 + 1000
+    setTimeout(() => {
+      const success = true
+      setApiCalls(prev => prev.map(call => 
+        call.id === callId 
+          ? { ...call, status: success ? 'completed' : 'failed' }
+          : call
+      ))
+      setTimeout(() => {
+        setApiCalls(prev => prev.filter(call => call.id !== callId))
+      }, 3000)
+    }, timeout)
   }
 
   const startEditing = (referral: Referral) => {
@@ -190,6 +265,9 @@ function App() {
       }
       
       setApiCalls(prev => [...prev, newCall])
+      
+      // Clear waiting indicator since we're now actually syncing
+      setWaitingForSync(null)
       
       const timeout = Math.random() * 3000 + 2000
       setTimeout(() => {
@@ -232,6 +310,13 @@ function App() {
       setPendingReferrals(prev => {
         const newSet = new Set([...prev, referralId])
         console.log('Updated pending referrals:', Array.from(newSet)) // Debug log
+        
+        // Set waiting indicator immediately
+        setWaitingForSync({
+          timestamp: new Date(),
+          referralCount: newSet.size
+        })
+        
         return newSet
       })
       
@@ -268,6 +353,8 @@ function App() {
 
   if (sqlWorker && parametros.length === 0) {
     obtenerParametros()
+    // Also fetch from endpoint on initial load
+    fetchParametrosFromEndpoint()
   }
 
   return (
@@ -313,11 +400,37 @@ function App() {
             <div className="sidebar-section">
               <h3>COLA DE PERSISTENCIA</h3>
               <div className="persistence-queue">
+                {/* Show waiting indicator if present */}
+                {thisTabIsActive && waitingForSync && (
+                  <div className="waiting-indicator">
+                    <div className="waiting-content">
+                      <div className="waiting-header">
+                        <span className="waiting-icon">
+                          <span className="spinner">...</span>
+                        </span>
+                        <span className="waiting-text">
+                          Esperando más cambios...
+                        </span>
+                      </div>
+                      <div className="waiting-details">
+                        <div className="waiting-count">
+                          {waitingForSync.referralCount} derivación{waitingForSync.referralCount !== 1 ? 'es' : ''} pendiente{waitingForSync.referralCount !== 1 ? 's' : ''}
+                        </div>
+                        <div className="waiting-timestamp">
+                          {waitingForSync.timestamp.toLocaleTimeString()}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
                 {thisTabIsActive && apiCalls.length > 0 ? (
                   apiCalls.map((call) => {
-                    const affectedReferrals = referrals.filter(r => call.referralIds.includes(r.id))
+                    const affectedReferrals = call.referralIds ? referrals.filter(r => call.referralIds!.includes(r.id)) : []
+                    const isParameterCall = call.type === 'parameters'
+                    
                     return (
-                      <div key={call.id} className={`api-call-item ${call.status} ${call.isBundled ? 'bundled' : ''}`}>
+                      <div key={call.id} className={`api-call-item ${call.status} ${call.isBundled ? 'bundled' : ''} ${isParameterCall ? 'parameter-call' : ''}`}>
                         <div className="api-call-content">
                           <div className="api-call-header">
                             <span className="api-call-icon">
@@ -326,16 +439,23 @@ function App() {
                               {call.status === 'failed' && 'ERR'}
                             </span>
                             <span className="api-call-text">
-                              {call.isBundled && call.status === 'pending' && `Sincronizando ${call.totalEdits} derivaciones...`}
-                              {call.isBundled && call.status === 'completed' && `${call.totalEdits} derivaciones sincronizadas`}
-                              {call.isBundled && call.status === 'failed' && `Error: ${call.totalEdits} derivaciones`}
-                              {!call.isBundled && call.status === 'pending' && 'Sincronizando...'}
-                              {!call.isBundled && call.status === 'completed' && 'Sincronizado'}
-                              {!call.isBundled && call.status === 'failed' && 'Error'}
+                              {isParameterCall && call.status === 'pending' && 'Actualizando parámetros...'}
+                              {isParameterCall && call.status === 'completed' && 'Parámetros actualizados'}
+                              {isParameterCall && call.status === 'failed' && 'Error actualizando parámetros'}
+                              {!isParameterCall && call.isBundled && call.status === 'pending' && `Sincronizando ${call.totalEdits} derivaciones...`}
+                              {!isParameterCall && call.isBundled && call.status === 'completed' && `${call.totalEdits} derivaciones sincronizadas`}
+                              {!isParameterCall && call.isBundled && call.status === 'failed' && `Error: ${call.totalEdits} derivaciones`}
+                              {!isParameterCall && !call.isBundled && call.status === 'pending' && 'Sincronizando...'}
+                              {!isParameterCall && !call.isBundled && call.status === 'completed' && 'Sincronizado'}
+                              {!isParameterCall && !call.isBundled && call.status === 'failed' && 'Error'}
                             </span>
                           </div>
                           <div className="api-call-details">
-                            {call.isBundled ? (
+                            {isParameterCall ? (
+                              <div className="api-call-parameter-info">
+                                Sincronización de parámetros del sistema
+                              </div>
+                            ) : call.isBundled ? (
                               <div>
                                 <div className="api-call-bundle-info">
                                   Sincronización global de {call.totalEdits} derivaciones

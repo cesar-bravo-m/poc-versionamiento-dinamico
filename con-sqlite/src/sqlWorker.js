@@ -122,6 +122,29 @@ self.addEventListener('connect', async (event) => {
                         }
                     }
                 })
+            } else if (type === 'actualizarParametros') {
+                const { parametros } = event.data
+                
+                // Clear existing parameters and insert new ones
+                await sqlite3.exec(db, 'DELETE FROM parametros')
+                
+                for (const param of parametros) {
+                    await sqlite3.exec(db, `INSERT INTO parametros (descripcion, nodo, valor, activo) VALUES ('${param.descripcion}', ${param.nodo}, ${param.valor}, ${param.activo ? 1 : 0})`)
+                }
+                
+                // Notify all connected ports about the parameter update
+                const updateMessage = {type: 'parametrosActualizados', parametros}
+                ports.forEach(p => {
+                    try {
+                        p.postMessage(updateMessage)
+                    } catch (e) {
+                        // Remove disconnected ports
+                        const index = ports.indexOf(p)
+                        if (index > -1) {
+                            ports.splice(index, 1)
+                        }
+                    }
+                })
             }
         } catch (e) {
             console.log("### SharedWorker error", e)
