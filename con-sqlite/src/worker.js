@@ -48,13 +48,13 @@ INSERT INTO derivaciones (
     nombreFuncionario,
     rutFuncionario
 ) VALUES
-(1, 'Cardiología', 'CESFAM Pichilemu', 'Hospital Regional', '2025-01-15', 'Pendiente',
+(1, 'Cardiología', 'CESFAM Pichilemu', 'Hospital Regional', '2025-01-15', 'Nueva',
  'Paciente con síntomas cardíacos requiere evaluación urgente', 'María González', '12.345.678-9', 'Dr. Carlos López', '11.222.333-4'),
 
-(2, 'Oftalmología', 'CESFAM La Estrella', 'Hospital de Especialidades', '2025-01-14', 'Enviado',
+(2, 'Oftalmología', 'CESFAM La Estrella', 'Hospital de Especialidades', '2025-01-14', 'Enviada',
  'Control post-operatorio de cataratas', 'Pedro Ramírez', '98.765.432-1', 'Dra. Ana Morales', '22.333.444-5'),
 
-(3, 'Pediatría', 'CESFAM Norte', 'Hospital Infantil', '2025-01-13', 'Atendido',
+(3, 'Pediatría', 'CESFAM Norte', 'Hospital Infantil', '2025-01-13', 'Atendida',
  'Evaluación de desarrollo psicomotor completada', 'Sofía Herrera', '19.876.543-2', 'Dr. Luis Fernández', '33.444.555-6');
 
         `
@@ -62,12 +62,31 @@ INSERT INTO derivaciones (
     addEventListener('message', async (event) => {
         try {
             const { type } = event.data
-            if (type === 'query') {
+            // Type: 'obtenerDerivaciones', 'actualizarDerivacion'
+            if (type === 'obtenerDerivaciones') {
                 const results = []
-                await sqlite3.exec(db, event.data.query, (row, col) => {
+                await sqlite3.exec(db, `SELECT * FROM derivaciones`, (row, col) => {
                     results.push(row)
                 })
-                postMessage(results)
+                postMessage({type: 'derivacionesObtenidas', derivaciones: results})
+            } else if (type === 'obtenerParametros') {
+                const results = []
+                await sqlite3.exec(db, `SELECT * FROM parametros`, (row, col) => {
+                    results.push(row)
+                })
+                postMessage({type: 'parametrosObtenidos', parametros: results})
+            } else if (type === 'actualizarDerivacion') {
+                const {
+                    id,
+                    estado,
+                    observaciones,
+                    nombrePaciente,
+                    rutPaciente,
+                    nombreFuncionario,
+                    rutFuncionario
+                } = event.data
+                await sqlite3.exec(db, `UPDATE derivaciones SET estado = '${estado}', observaciones = '${observaciones}', nombrePaciente = '${nombrePaciente}', rutPaciente = '${rutPaciente}', nombreFuncionario = '${nombreFuncionario}', rutFuncionario = '${rutFuncionario}' WHERE id = ${id}`)
+                postMessage({type: 'derivacionActualizada', id, estado, observaciones, nombrePaciente, rutPaciente, nombreFuncionario, rutFuncionario})
             }
         } catch (e) {
             console.log("### error", e);

@@ -23,62 +23,13 @@ type Referral = {
   rutFuncionario: string; // Eg. 12345678-9
 }
 
-// Mock data for referrals
-const mockReferrals: Referral[] =
-[
-  {
-    id: 1,
-    especialidad: "Cardiología",
-    nodoOrigen: "CESFAM Pichilemu",
-    nodoDestino: "Hospital Regional",
-    fecha: "2025-01-15",
-    estado: "Pendiente",
-    observaciones: "Paciente con síntomas cardíacos requiere evaluación urgente",
-    nombrePaciente: "María González",
-    rutPaciente: "12.345.678-9",
-    nombreFuncionario: "Dr. Carlos López",
-    rutFuncionario: "11.222.333-4"
-  },
-  {
-    id: 2,
-    especialidad: "Oftalmología",
-    nodoOrigen: "CESFAM La Estrella",
-    nodoDestino: "Hospital de Especialidades",
-    fecha: "2025-01-14",
-    estado: "Enviado",
-    observaciones: "Control post-operatorio de cataratas",
-    nombrePaciente: "Pedro Ramírez",
-    rutPaciente: "98.765.432-1",
-    nombreFuncionario: "Dra. Ana Morales",
-    rutFuncionario: "22.333.444-5"
-  },
-  {
-    id: 3,
-    especialidad: "Pediatría",
-    nodoOrigen: "CESFAM Norte",
-    nodoDestino: "Hospital Infantil",
-    fecha: "2025-01-13",
-    estado: "Atendido",
-    observaciones: "Evaluación de desarrollo psicomotor completada",
-    nombrePaciente: "Sofía Herrera",
-    rutPaciente: "19.876.543-2",
-    nombreFuncionario: "Dr. Luis Fernández",
-    rutFuncionario: "33.444.555-6"
-  }
-];
-
 function App() {
   const [worker, setWorker] = useState<Worker | null>(null)
   const [results, setResults] = useState<Parametro[]>([])
   const [activeTabId, setActiveTabId] = useState<string | null>(null)
   const [tabId, setTabId] = useState<string | null>(null)
-  const [parametros, setParametros] = useState<Parametro[]>([
-    { descripcion: "Conexiones Activas", nodo: 1, valor: 15, activo: true },
-    { descripcion: "Referencias Pendientes", nodo: 1, valor: 8, activo: true },
-    { descripcion: "Especialistas Disponibles", nodo: 2, valor: 12, activo: true },
-    { descripcion: "Centros de Salud", nodo: 1, valor: 5, activo: true }
-  ])
-  const [referrals] = useState<Referral[]>(mockReferrals)
+  const [parametros, setParametros] = useState<Parametro[]>([])
+  const [referrals, setReferrals] = useState<Referral[]>([])
 
   const thisTabIsActive = tabId === activeTabId
 
@@ -123,25 +74,66 @@ function App() {
   useEffect(() => {
     const worker = new Worker(new URL('./worker.js', import.meta.url), { type: 'module' })
     worker.addEventListener('message', (event) => {
-      const parametros = event.data.map((row: Array<string>) => ({
-        descripcion: row[0],
-        nodo: parseInt(row[1]),
-        valor: parseInt(row[2]),
-        activo: row[3]
-      }))
-      setResults([...results, ...parametros])
+      if (event.data.type === 'derivacionesObtenidas') {
+        const newReferrals: Referral[] = []
+        for (const row of event.data.derivaciones) {
+          const referral: Referral = {
+            id: row[0],
+            especialidad: row[1],
+            nodoOrigen: row[2],
+            nodoDestino: row[3],
+            fecha: row[4],
+            estado: row[5],
+            observaciones: row[6],
+            nombrePaciente: row[7],
+            rutPaciente: row[8],
+            nombreFuncionario: row[9],
+            rutFuncionario: row[10]
+          }
+          newReferrals.push(referral)
+        }
+        setReferrals(newReferrals)
+      } else if (event.data.type === 'parametrosObtenidos') {
+        const newParametros: Parametro[] = []
+        for (const row of event.data.parametros) {
+          const parametro: Parametro = {
+            descripcion: row[0],
+            nodo: row[1],
+            valor: row[2],
+            activo: true
+          }
+          newParametros.push(parametro)
+        }
+        setParametros(newParametros)
+      }
     })
     setWorker(worker)
   }, [results, tabId, activeTabId])
 
   const getEstadoColor = (estado: string) => {
     switch (estado) {
-      case 'Pendiente': return '#f59e0b';
-      case 'Enviado': return '#3b82f6';
-      case 'Atendido': return '#10b981';
-      case 'Rechazado': return '#ef4444';
+      case 'Nueva': return '#f59e0b';
+      case 'Enviada': return '#3b82f6';
+      case 'Atendida': return '#10b981';
+      case 'Rechazaao': return '#ef4444';
       default: return '#6b7280';
     }
+  }
+
+  const obtenerDerivaciones = () => {
+    worker?.postMessage({type: 'obtenerDerivaciones' })
+  }
+
+  const obtenerParametros = () => {
+    worker?.postMessage({type: 'obtenerParametros' })
+  }
+
+  if (worker && referrals.length === 0) {
+    obtenerDerivaciones()
+  }
+
+  if (worker && parametros.length === 0) {
+    obtenerParametros()
   }
 
   return (
@@ -185,12 +177,13 @@ function App() {
 
           {/* Operation Queue */}
           <div className="sidebar-section">
-            <h3>⚙️ COLA DE OPERACIONES</h3>
+            <h3>OPERACIONES</h3>
             <div className="operation-queue">
-              <button onClick={() => {
-                worker?.postMessage({type: 'query', query: `SELECT * FROM parametros`})
-              }} className="queue-button">
-                Actualizar Parámetros
+              <button onClick={obtenerParametros} className="queue-button">
+                Obtener Parámetros
+              </button>
+              <button onClick={obtenerDerivaciones} className="queue-button">
+                Obtener Derivaciones
               </button>
             </div>
           </div>
