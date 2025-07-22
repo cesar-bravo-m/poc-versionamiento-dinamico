@@ -31,9 +31,9 @@ function App() {
       .configureLogging(signalR.LogLevel.Information)
       .build()
 
-    hubConnection.on('parametrosCambiados', (message: any) => {
+    hubConnection.on('parametrosCambiados', (message: string) => {
       console.log('Nueva versión recibida:', message)
-      // setLastMessage(message)
+      setLastMessage(message)
     })
 
     const startConnection = async () => {
@@ -82,6 +82,10 @@ function App() {
     }
   }
 
+  const getDisplayValue = (value: string) => {
+    return value === '1' ? 'Activo' : 'Inactivo'
+  }
+
   const handleVersionChange = (field: keyof Parametros, value: string) => {
     const newEditedParametros = { ...editedParametros, [field]: value }
     setEditedParametros(newEditedParametros)
@@ -90,6 +94,12 @@ function App() {
                       newEditedParametros.usaParametro2 !== parametros.usaParametro2 ||
                       newEditedParametros.usaParametro3 !== parametros.usaParametro3
     setHasChanges(hasChanges)
+  }
+
+  const handleToggle = (field: keyof Parametros) => {
+    const currentValue = editedParametros[field]
+    const newValue = currentValue === '1' ? '0' : '1'
+    handleVersionChange(field, newValue)
   }
 
   const updateVersions = async () => {
@@ -128,7 +138,7 @@ function App() {
     <div className="dashboard-container">
       <div className="dashboard-header">
         <h1 className="dashboard-title">
-          Dashboard de versiones
+          Dashboard de configuraciones
         </h1>
       </div>
 
@@ -143,52 +153,70 @@ function App() {
         <table className="version-table">
           <thead>
             <tr>
-              <th>Componente</th>
-              <th>Versión Actual</th>
-              <th>Editar</th>
+              <th>Parámetro</th>
+              <th>Valor actual</th>
+              <th>Cambiar valor</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td className="component-name">UsaParametro1</td>
-              <td className="current-version">{parametros.usaParametro1}</td>
+              <td className="component-name">USA_PARAMETRO_1</td>
+              <td className="current-version">{getDisplayValue(parametros.usaParametro1)}</td>
               <td className="edit-cell">
-                <input
-                  type="text"
-                  value={editedParametros.usaParametro1}
-                  onChange={(e) => handleVersionChange('usaParametro1', e.target.value)}
-                  placeholder="Ingresa nueva versión"
-                  disabled={isLoading}
-                  className="version-input"
-                />
+                <div className="toggle-container">
+                  <label className="toggle-switch">
+                    <input
+                      type="checkbox"
+                      checked={editedParametros.usaParametro1 === '1'}
+                      onChange={() => handleToggle('usaParametro1')}
+                      disabled={isLoading}
+                    />
+                    <span className="toggle-slider"></span>
+                  </label>
+                  <span className="toggle-label">
+                    {getDisplayValue(editedParametros.usaParametro1)}
+                  </span>
+                </div>
               </td>
             </tr>
             <tr>
-              <td className="component-name">UsaParametro2</td>
-              <td className="current-version">{parametros.usaParametro2}</td>
+              <td className="component-name">USA_PARAMETRO_2</td>
+              <td className="current-version">{getDisplayValue(parametros.usaParametro2)}</td>
               <td className="edit-cell">
-                <input
-                  type="text"
-                  value={editedParametros.usaParametro2}
-                  onChange={(e) => handleVersionChange('usaParametro2', e.target.value)}
-                  placeholder="Ingresa nueva versión"
-                  disabled={isLoading}
-                  className="version-input"
-                />
+                <div className="toggle-container">
+                  <label className="toggle-switch">
+                    <input
+                      type="checkbox"
+                      checked={editedParametros.usaParametro2 === '1'}
+                      onChange={() => handleToggle('usaParametro2')}
+                      disabled={isLoading}
+                    />
+                    <span className="toggle-slider"></span>
+                  </label>
+                  <span className="toggle-label">
+                    {getDisplayValue(editedParametros.usaParametro2)}
+                  </span>
+                </div>
               </td>
             </tr>
             <tr>
-              <td className="component-name">UsaParametro3</td>
-              <td className="current-version">{parametros.usaParametro3}</td>
+              <td className="component-name">USA_PARAMETRO_3</td>
+              <td className="current-version">{getDisplayValue(parametros.usaParametro3)}</td>
               <td className="edit-cell">
-                <input
-                  type="text"
-                  value={editedParametros.usaParametro3}
-                  onChange={(e) => handleVersionChange('usaParametro3', e.target.value)}
-                  placeholder="Ingresa nueva versión"
-                  disabled={isLoading}
-                  className="version-input"
-                />
+                <div className="toggle-container">
+                  <label className="toggle-switch">
+                    <input
+                      type="checkbox"
+                      checked={editedParametros.usaParametro3 === '1'}
+                      onChange={() => handleToggle('usaParametro3')}
+                      disabled={isLoading}
+                    />
+                    <span className="toggle-slider"></span>
+                  </label>
+                  <span className="toggle-label">
+                    {getDisplayValue(editedParametros.usaParametro3)}
+                  </span>
+                </div>
               </td>
             </tr>
           </tbody>
@@ -225,19 +253,6 @@ function App() {
           </button>
         )}
       </div>
-
-      {lastMessage && (
-        <div className="messages-section">
-          <h3 className="messages-title">Último mensaje del websocket</h3>
-          <div className="messages-container">
-            <div className="message-item">
-              <div className="message-content">
-                <span className="message-text">{lastMessage}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

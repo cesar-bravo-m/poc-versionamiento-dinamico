@@ -8,9 +8,9 @@ public class ParametrosService
     {
         _parametros = new Parametros
         {
-            UsaParametro1 = "1",
-            UsaParametro2 = "1",
-            UsaParametro3 = "1"
+            UsaParametro1 = "0",
+            UsaParametro2 = "0",
+            UsaParametro3 = "0"
         };
     }
 
