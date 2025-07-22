@@ -1,4 +1,4 @@
-// shared-worker.js
+
 
 let ports = [];
 let currentActiveId = null;

@@ -1,14 +1,11 @@
 import SQLiteESMFactory from 'wa-sqlite/dist/wa-sqlite.mjs'
 import * as SQLite from 'wa-sqlite'
 
-// Array to store all connected ports
 const ports = []
 
-// Database instance will be shared across all connections
 let db = null
 let sqlite3 = null
 
-// Initialize database once
 const initializeDatabase = async () => {
     if (!db) {
         const module = await SQLiteESMFactory()
@@ -24,16 +21,16 @@ const initializeDatabase = async () => {
             );
             CREATE TABLE IF NOT EXISTS derivaciones (
                 id INTEGER PRIMARY KEY,
-                especialidad TEXT NOT NULL,           -- Eg. "Odontología", "Pediatría"
-                nodoOrigen TEXT NOT NULL,             -- Eg. "CESFAM de Pichilemu"
-                nodoDestino TEXT NOT NULL,            -- Eg. "Hospital de Pichilemu"
-                fecha TEXT NOT NULL,                  -- Stored in ISO format: "YYYY-MM-DD"
-                estado TEXT NOT NULL,                 -- Eg. "Pendiente", "Enviado", "Rechazado", "Atendido"
-                observaciones TEXT,                   -- Optional field
-                nombrePaciente TEXT NOT NULL,         -- Eg. "Juan Pérez"
-                rutPaciente TEXT NOT NULL,            -- Eg. "12345678-9"
-                nombreFuncionario TEXT NOT NULL,      -- Eg. "Juan Pérez"
-                rutFuncionario TEXT NOT NULL          -- Eg. "12345678-9"
+                especialidad TEXT NOT NULL,
+                nodoOrigen TEXT NOT NULL,
+                nodoDestino TEXT NOT NULL,
+                fecha TEXT NOT NULL,
+                estado TEXT NOT NULL,
+                observaciones TEXT,
+                nombrePaciente TEXT NOT NULL,
+                rutPaciente TEXT NOT NULL,
+                nombreFuncionario TEXT NOT NULL,
+                rutFuncionario TEXT NOT NULL
             );
             `
         )
@@ -43,7 +40,6 @@ const initializeDatabase = async () => {
             INSERT OR IGNORE INTO parametros (descripcion, nodo, valor, activo) VALUES ('usa_parametro_2', 2, 1, true);
             INSERT OR IGNORE INTO parametros (descripcion, nodo, valor, activo) VALUES ('usa_parametro_3', 3, 1, true);
 
-            -- INSERT data into 'derivaciones'
             INSERT OR IGNORE INTO derivaciones (
                 id,
                 especialidad,
@@ -70,12 +66,10 @@ const initializeDatabase = async () => {
     }
 }
 
-// Handle SharedWorker connections
 self.addEventListener('connect', async (event) => {
     const port = event.ports[0]
     ports.push(port)
     
-    // Initialize database when first connection is made
     await initializeDatabase()
     
     port.addEventListener('message', async (event) => {
@@ -109,13 +103,11 @@ self.addEventListener('connect', async (event) => {
                 
                 await sqlite3.exec(db, `UPDATE derivaciones SET estado = '${estado}', observaciones = '${observaciones}', nombrePaciente = '${nombrePaciente}', rutPaciente = '${rutPaciente}', nombreFuncionario = '${nombreFuncionario}', rutFuncionario = '${rutFuncionario}' WHERE id = ${id}`)
                 
-                // Notify all connected ports about the update
                 const updateMessage = {type: 'derivacionActualizada', id, estado, observaciones, nombrePaciente, rutPaciente, nombreFuncionario, rutFuncionario}
                 ports.forEach(p => {
                     try {
                         p.postMessage(updateMessage)
                     } catch (e) {
-                        // Remove disconnected ports
                         const index = ports.indexOf(p)
                         if (index > -1) {
                             ports.splice(index, 1)
@@ -125,20 +117,17 @@ self.addEventListener('connect', async (event) => {
             } else if (type === 'actualizarParametros') {
                 const { parametros } = event.data
                 
-                // Clear existing parameters and insert new ones
                 await sqlite3.exec(db, 'DELETE FROM parametros')
                 
                 for (const param of parametros) {
                     await sqlite3.exec(db, `INSERT INTO parametros (descripcion, nodo, valor, activo) VALUES ('${param.descripcion}', ${param.nodo}, ${param.valor}, ${param.activo ? 1 : 0})`)
                 }
                 
-                // Notify all connected ports about the parameter update
                 const updateMessage = {type: 'parametrosActualizados', parametros}
                 ports.forEach(p => {
                     try {
                         p.postMessage(updateMessage)
                     } catch (e) {
-                        // Remove disconnected ports
                         const index = ports.indexOf(p)
                         if (index > -1) {
                             ports.splice(index, 1)

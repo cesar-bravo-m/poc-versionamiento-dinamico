@@ -11,16 +11,16 @@ type Parametro = {
 
 type Referral = {
   id: number;
-  especialidad: string; // Odontología, Pediatría, etc.
-  nodoOrigen: string; // Eg. CESFAM de Pichilemu
-  nodoDestino: string; // Eg. Hospital de Pichilemu
-  fecha: string; // Eg. 2025-07-22
-  estado: string; // Eg. Pendiente, Enviado, Rechazado, Atendido
-  observaciones: string; // Eg. "El paciente no pudo ser atendido por falta de turno"
-  nombrePaciente: string; // Eg. "Juan Pérez"
-  rutPaciente: string; // Eg. 12345678-9
-  nombreFuncionario: string; // Eg. "Juan Pérez"
-  rutFuncionario: string; // Eg. 12345678-9
+  especialidad: string;
+  nodoOrigen: string;
+  nodoDestino: string;
+  fecha: string;
+  estado: string;
+  observaciones: string;
+  nombrePaciente: string;
+  rutPaciente: string;
+  nombreFuncionario: string;
+  rutFuncionario: string;
 }
 
 function App() {
@@ -34,12 +34,11 @@ function App() {
   const [apiCalls, setApiCalls] = useState<{id: string, referralIds?: number[], timestamp: Date, status: 'pending' | 'completed' | 'failed', isBundled?: boolean, totalEdits?: number, type?: 'referrals' | 'parameters'}[]>([])
   const [expandedReferrals, setExpandedReferrals] = useState<Set<number>>(new Set([1, 2, 3]))
   const [globalTimeout, setGlobalTimeout] = useState<number | null>(null)
-  const [pendingReferrals, setPendingReferrals] = useState<Set<number>>(new Set()) // All referrals with pending changes
+  const [pendingReferrals, setPendingReferrals] = useState<Set<number>>(new Set())
   const [waitingForSync, setWaitingForSync] = useState<{timestamp: Date, referralCount: number} | null>(null)
 
   const thisTabIsActive = tabId === activeTabId
 
-  // Debug: Log pending referrals changes
   useEffect(() => {
     console.log('Pending referrals changed:', Array.from(pendingReferrals))
   }, [pendingReferrals])
@@ -52,10 +51,8 @@ function App() {
     connection.on('parametrosCambiados', async (parametros) => {
       console.log("### parametrosCambiados event received", parametros);
       
-      // Create parameter update call in persistence queue
       createParameterUpdateCall()
       
-      // Fetch fresh parameters from endpoint
       await fetchParametrosFromEndpoint()
     })
 
@@ -128,12 +125,10 @@ function App() {
               }
             : ref
         ))
-        // Exit edit mode
         setEditingId(null)
         setEditingReferral(null)
       } else if (event.data.type === 'parametrosActualizados') {
         console.log('Parameters updated in database:', event.data.parametros)
-        // The parameters have already been updated via the fetchParametrosFromEndpoint function
       }
     })
     
@@ -160,7 +155,6 @@ function App() {
       const response = await fetch('http://localhost:5018/parametros/1')
       const data = await response.json()
       
-      // Convert endpoint response to Parametro objects
       const endpointParametros: Parametro[] = Object.entries(data).map(([descripcion, valor]) => ({
         descripcion,
         nodo: 1,
@@ -170,7 +164,6 @@ function App() {
       
       console.log('Fetched parameters from endpoint:', endpointParametros)
       
-             // Compare with current parameters
        const currentValues = parametros.map(p => `${p.descripcion}:${p.valor}`).sort()
        const endpointValues = endpointParametros.map(p => `${p.descripcion}:${p.valor}`).sort()
        
@@ -179,10 +172,8 @@ function App() {
       if (parametersChanged) {
         console.log('Parameters changed, updating database and UI')
         
-        // Update local state immediately
         setParametros(endpointParametros)
         
-        // Update database via worker
         if (sqlWorker) {
           sqlWorker.port.postMessage({
             type: 'actualizarParametros',
@@ -244,14 +235,13 @@ function App() {
   }
 
   const createGlobalApiCall = () => {
-    if (!thisTabIsActive) return // Only create API calls for active tab
+    if (!thisTabIsActive) return
     
-    // Use functional update to get the latest pending referrals
     setPendingReferrals(currentPending => {
       const referralIds = Array.from(currentPending)
-      console.log('Creating global API call for referrals:', referralIds) // Debug log
+      console.log('Creating global API call for referrals:', referralIds)
       
-      if (referralIds.length === 0) return currentPending // No pending referrals
+      if (referralIds.length === 0) return currentPending
       
       const callId = Math.random().toString(36).substr(2, 9)
       const isBundled = referralIds.length > 1
@@ -266,7 +256,6 @@ function App() {
       
       setApiCalls(prev => [...prev, newCall])
       
-      // Clear waiting indicator since we're now actually syncing
       setWaitingForSync(null)
       
       const timeout = Math.random() * 3000 + 2000
@@ -282,7 +271,6 @@ function App() {
         }, 3000)
       }, timeout)
       
-      // Clear pending referrals since we're now syncing
       return new Set()
     })
   }
@@ -309,9 +297,8 @@ function App() {
       
       setPendingReferrals(prev => {
         const newSet = new Set([...prev, referralId])
-        console.log('Updated pending referrals:', Array.from(newSet)) // Debug log
+        console.log('Updated pending referrals:', Array.from(newSet))
         
-        // Set waiting indicator immediately
         setWaitingForSync({
           timestamp: new Date(),
           referralCount: newSet.size
@@ -353,7 +340,6 @@ function App() {
 
   if (sqlWorker && parametros.length === 0) {
     obtenerParametros()
-    // Also fetch from endpoint on initial load
     fetchParametrosFromEndpoint()
   }
 
@@ -400,7 +386,6 @@ function App() {
             <div className="sidebar-section">
               <h3>COLA DE PERSISTENCIA</h3>
               <div className="persistence-queue">
-                {/* Show waiting indicator if present */}
                 {thisTabIsActive && waitingForSync && (
                   <div className="waiting-indicator">
                     <div className="waiting-content">
