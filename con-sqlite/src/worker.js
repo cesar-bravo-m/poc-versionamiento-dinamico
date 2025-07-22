@@ -13,12 +13,50 @@ import * as SQLite from 'wa-sqlite'
             valor INTEGER NOT NULL,
             activo BOOLEAN NOT NULL
         );
+        CREATE TABLE IF NOT EXISTS derivaciones (
+            id INTEGER PRIMARY KEY,
+            especialidad TEXT NOT NULL,           -- Eg. "Odontología", "Pediatría"
+            nodoOrigen TEXT NOT NULL,             -- Eg. "CESFAM de Pichilemu"
+            nodoDestino TEXT NOT NULL,            -- Eg. "Hospital de Pichilemu"
+            fecha TEXT NOT NULL,                  -- Stored in ISO format: "YYYY-MM-DD"
+            estado TEXT NOT NULL,                 -- Eg. "Pendiente", "Enviado", "Rechazado", "Atendido"
+            observaciones TEXT,                   -- Optional field
+            nombrePaciente TEXT NOT NULL,         -- Eg. "Juan Pérez"
+            rutPaciente TEXT NOT NULL,            -- Eg. "12345678-9"
+            nombreFuncionario TEXT NOT NULL,      -- Eg. "Juan Pérez"
+            rutFuncionario TEXT NOT NULL          -- Eg. "12345678-9"
+        );
         `
     )
     await sqlite3.exec(db, 
         `
-INSERT INTO parametros (descripcion, nodo, valor, activo) VALUES ('usa_parametro1', 1, 1, false);
-INSERT INTO parametros (descripcion, nodo, valor, activo) VALUES ('usa_parametro2', 2, 1, true);
+INSERT INTO parametros (descripcion, nodo, valor, activo) VALUES ('usa_parametro_1', 1, 1, false);
+INSERT INTO parametros (descripcion, nodo, valor, activo) VALUES ('usa_parametro_2', 2, 1, true);
+INSERT INTO parametros (descripcion, nodo, valor, activo) VALUES ('usa_parametro_3', 3, 1, true);
+
+-- INSERT data into 'derivaciones'
+INSERT INTO derivaciones (
+    id,
+    especialidad,
+    nodoOrigen,
+    nodoDestino,
+    fecha,
+    estado,
+    observaciones,
+    nombrePaciente,
+    rutPaciente,
+    nombreFuncionario,
+    rutFuncionario
+) VALUES
+(1, 'Cardiología', 'CESFAM Pichilemu', 'Hospital Regional', '2025-01-15', 'Pendiente',
+ 'Paciente con síntomas cardíacos requiere evaluación urgente', 'María González', '12.345.678-9', 'Dr. Carlos López', '11.222.333-4'),
+
+(2, 'Oftalmología', 'CESFAM La Estrella', 'Hospital de Especialidades', '2025-01-14', 'Enviado',
+ 'Control post-operatorio de cataratas', 'Pedro Ramírez', '98.765.432-1', 'Dra. Ana Morales', '22.333.444-5'),
+
+(3, 'Pediatría', 'CESFAM Norte', 'Hospital Infantil', '2025-01-13', 'Atendido',
+ 'Evaluación de desarrollo psicomotor completada', 'Sofía Herrera', '19.876.543-2', 'Dr. Luis Fernández', '33.444.555-6');
+
         `
     )
     addEventListener('message', async (event) => {
