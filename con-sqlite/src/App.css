@@ -191,6 +191,117 @@ body {
   gap: 0.5rem;
 }
 
+/* Persistence Queue */
+.persistence-queue {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.api-call-item {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0.75rem;
+  transition: all 0.3s ease;
+}
+
+.api-call-item.pending {
+  border-left: 3px solid #f59e0b;
+  background: #fffbf0;
+}
+
+.api-call-item.completed {
+  border-left: 3px solid #10b981;
+  background: #f0fdf4;
+}
+
+.api-call-item.failed {
+  border-left: 3px solid #ef4444;
+  background: #fef2f2;
+}
+
+.api-call-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.api-call-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.api-call-icon {
+  font-size: 1rem;
+}
+
+.spinner {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.api-call-text {
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.api-call-item.pending .api-call-text {
+  color: #d97706;
+}
+
+.api-call-item.completed .api-call-text {
+  color: #059669;
+}
+
+.api-call-item.failed .api-call-text {
+  color: #dc2626;
+}
+
+.api-call-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding-left: 1.5rem;
+}
+
+.api-call-patient {
+  font-weight: 500;
+  color: #1e293b;
+  font-size: 0.8rem;
+}
+
+.api-call-specialty {
+  color: #64748b;
+  font-size: 0.75rem;
+  font-style: italic;
+}
+
+.api-call-timestamp {
+  color: #94a3b8;
+  font-size: 0.7rem;
+  font-family: monospace;
+}
+
+.no-api-calls {
+  text-align: center;
+  color: #64748b;
+  font-style: italic;
+  padding: 1rem;
+  font-size: 0.85rem;
+}
+
 .queue-button {
   background: #667eea;
   color: white;
@@ -269,6 +380,43 @@ body {
   margin-bottom: 1.5rem;
   font-size: 1.3rem;
   font-weight: 600;
+}
+
+/* Content Header Section */
+.content-header-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.content-header-section h2 {
+  margin: 0;
+}
+
+.collapse-button {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #475569;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.collapse-button:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #334155;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 /* Referrals List */
@@ -393,7 +541,6 @@ body {
   border-left: 3px solid #667eea;
 }
 
-/* Edit Controls */
 .edit-button {
   background: #f8fafc;
   border: 1px solid #e2e8f0;
@@ -402,6 +549,7 @@ body {
   cursor: pointer;
   transition: all 0.2s ease;
   font-size: 1rem;
+  color: #777;
 }
 
 .edit-button:hover {

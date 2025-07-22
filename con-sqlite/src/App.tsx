@@ -31,6 +31,8 @@ function App() {
   const [referrals, setReferrals] = useState<Referral[]>([])
   const [editingId, setEditingId] = useState<number | null>(null)
   const [editingReferral, setEditingReferral] = useState<Referral | null>(null)
+  const [apiCalls, setApiCalls] = useState<{id: string, referralId: number, timestamp: Date, status: 'pending' | 'completed' | 'failed'}[]>([])
+  const [expandedReferrals, setExpandedReferrals] = useState<Set<number>>(new Set([1, 2, 3]))
 
   const thisTabIsActive = tabId === activeTabId
 
@@ -159,6 +161,33 @@ function App() {
     setEditingReferral(null)
   }
 
+  const createApiCall = (referralId: number) => {
+    if (!thisTabIsActive) return // Only create API calls for active tab
+    
+    const callId = Math.random().toString(36).substr(2, 9)
+    const newCall = {
+      id: callId,
+      referralId,
+      timestamp: new Date(),
+      status: 'pending' as const
+    }
+    
+    setApiCalls(prev => [...prev, newCall])
+    
+    const timeout = Math.random() * 3000 + 2000
+    setTimeout(() => {
+      const success = true;
+      setApiCalls(prev => prev.map(call => 
+        call.id === callId 
+          ? { ...call, status: success ? 'completed' : 'failed' }
+          : call
+      ))
+      setTimeout(() => {
+        setApiCalls(prev => prev.filter(call => call.id !== callId))
+      }, 3000)
+    }, timeout)
+  }
+
   const saveChanges = () => {
     if (editingReferral && sqlWorker) {
       sqlWorker.port.postMessage({
@@ -171,6 +200,11 @@ function App() {
         nombreFuncionario: editingReferral.nombreFuncionario,
         rutFuncionario: editingReferral.rutFuncionario
       })
+      
+      const referralId = editingReferral.id
+      setTimeout(() => {
+        createApiCall(referralId)
+      }, 3000)
     }
   }
 
@@ -178,6 +212,18 @@ function App() {
     if (editingReferral) {
       setEditingReferral(prev => prev ? { ...prev, [field]: value } : null)
     }
+  }
+
+  const toggleReferralExpanded = (referralId: number) => {
+    setExpandedReferrals(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(referralId)) {
+        newSet.delete(referralId)
+      } else {
+        newSet.add(referralId)
+      }
+      return newSet
+    })
   }
 
   if (sqlWorker && referrals.length === 0) {
@@ -204,77 +250,126 @@ function App() {
 
       <div className="main-content">
         <div className="sidebar">
-          <div className="sidebar-section">
-            <h3>PARÁMETROS DEL NODO</h3>
-            <div className="parameters-list">
-              {parametros.map((param, index) => (
-                <div key={index} className="parameter-item">
-                  <div className="parameter-desc">{param.descripcion}</div>
-                  <div className="parameter-value">{param.valor}</div>
-                </div>
-              ))}
+                      <div className="sidebar-section">
+              <h3>PARÁMETROS DEL NODO</h3>
+              <div className="parameters-list">
+                {parametros.map((param, index) => (
+                  <div key={index} className="parameter-item">
+                    <div className="parameter-desc">{param.descripcion}</div>
+                    <div className="parameter-value">{param.valor}</div>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
 
-          <div className="sidebar-section">
-            <h3>OPERACIONES</h3>
-            <div className="operation-queue">
-              <button onClick={obtenerParametros} className="queue-button">
-                Obtener Parámetros
-              </button>
-              <button onClick={obtenerDerivaciones} className="queue-button">
-                Obtener Derivaciones
-              </button>
+            <div className="sidebar-section">
+              <h3>OPERACIONES</h3>
+              <div className="operation-queue">
+                <button onClick={obtenerParametros} className="queue-button">
+                  Obtener Parámetros
+                </button>
+                <button onClick={obtenerDerivaciones} className="queue-button">
+                  Obtener Derivaciones
+                </button>
+              </div>
             </div>
-          </div>
+
+            <div className="sidebar-section">
+              <h3>COLA DE PERSISTENCIA</h3>
+              <div className="persistence-queue">
+                {thisTabIsActive && apiCalls.length > 0 ? (
+                  apiCalls.map((call) => {
+                    const referral = referrals.find(r => r.id === call.referralId)
+                    return (
+                      <div key={call.id} className={`api-call-item ${call.status}`}>
+                        <div className="api-call-content">
+                          <div className="api-call-header">
+                            <span className="api-call-icon">
+                              {call.status === 'pending' && <span className="spinner">...</span>}
+                              {call.status === 'completed' && 'OK'}
+                              {call.status === 'failed' && 'ERR'}
+                            </span>
+                            <span className="api-call-text">
+                              {call.status === 'pending' && 'Sincronizando...'}
+                              {call.status === 'completed' && 'Sincronizado'}
+                              {call.status === 'failed' && 'Error'}
+                            </span>
+                          </div>
+                          <div className="api-call-details">
+                            <div className="api-call-patient">{referral?.nombrePaciente}</div>
+                            <div className="api-call-specialty">{referral?.especialidad}</div>
+                            <div className="api-call-timestamp">
+                              {call.timestamp.toLocaleTimeString()}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })
+                ) : (
+                  <div className="no-api-calls">
+                    {thisTabIsActive ? 'No hay sincronizaciones pendientes' : 'Tab inactiva'}
+                  </div>
+                )}
+              </div>
+            </div>
         </div>
 
         <div className="content-area">
           <div className="content-body">
             <div className="referrals-list">
               {referrals.map((referral) => {
-                const isEditing = editingId === referral.id
-                const displayReferral = isEditing ? editingReferral! : referral
-                
-                return (
-                  <div key={referral.id} className="referral-card">
-                    <div className="referral-header">
-                      <div className="referral-title">
-                        <h3>{displayReferral.especialidad}</h3>
-                        {isEditing ? (
-                          <select 
-                            value={displayReferral.estado}
-                            onChange={(e) => updateEditingField('estado', e.target.value)}
-                            className="status-edit"
-                          >
-                            <option value="Nueva">Nueva</option>
-                            <option value="Enviada">Enviada</option>
-                            <option value="Atendida">Atendida</option>
-                            <option value="Rechazada">Rechazada</option>
-                          </select>
-                        ) : (
-                          <span 
-                            className="status-badge" 
-                            style={{ backgroundColor: getEstadoColor(displayReferral.estado) }}
-                          >
-                            {displayReferral.estado}
-                          </span>
-                        )}
-                      </div>
-                      <div className="referral-actions">
-                        <div className="referral-date">{displayReferral.fecha}</div>
-                        {!isEditing && (
-                          <button 
-                            className="edit-button"
-                            onClick={() => startEditing(referral)}
-                            title="Editar derivación"
-                          >
-                            ✏️
-                          </button>
-                        )}
-                      </div>
+              const isEditing = editingId === referral.id
+              const displayReferral = isEditing ? editingReferral! : referral
+              const isExpanded = expandedReferrals.has(referral.id)
+              
+              return (
+                <div key={referral.id} className="referral-card">
+                  <div className="referral-header">
+                    <div className="referral-title">
+                      <h3>{displayReferral.especialidad}</h3>
+                      {isEditing ? (
+                        <select 
+                          value={displayReferral.estado}
+                          onChange={(e) => updateEditingField('estado', e.target.value)}
+                          className="status-edit"
+                        >
+                          <option value="Nueva">Nueva</option>
+                          <option value="Enviada">Enviada</option>
+                          <option value="Atendida">Atendida</option>
+                          <option value="Rechazada">Rechazada</option>
+                        </select>
+                      ) : (
+                        <span 
+                          className="status-badge" 
+                          style={{ backgroundColor: getEstadoColor(displayReferral.estado) }}
+                        >
+                          {displayReferral.estado}
+                        </span>
+                      )}
                     </div>
-                    
+                    <div className="referral-actions">
+                      <div className="referral-date">{displayReferral.fecha}</div>
+                      <button 
+                        className="collapse-button"
+                        onClick={() => toggleReferralExpanded(referral.id)}
+                        title={isExpanded ? "Colapsar detalles" : "Expandir detalles"}
+                      >
+                        {isExpanded ? 'Colapsar' : 'Expandir'}
+                      </button>
+                      {!isEditing && isExpanded && (
+                        <button 
+                          className="edit-button"
+                          onClick={() => startEditing(referral)}
+                          title="Editar derivación"
+                        >
+                          Editar
+                        </button>
+                      )}
+                    </div>
+                                    </div>
+                  
+                  {isExpanded && (
                     <div className="referral-body">
                       <div className="referral-row">
                         <div className="referral-field">
@@ -365,17 +460,18 @@ function App() {
                             className="save-button"
                             onClick={saveChanges}
                           >
-                            💾 Guardar
+                            Guardar
                           </button>
                           <button 
                             className="cancel-button"
                             onClick={cancelEditing}
                           >
-                            ❌ Descartar cambios
+                            Descartar cambios
                           </button>
                         </div>
                       )}
                     </div>
+                  )}
                   </div>
                 )
               })}

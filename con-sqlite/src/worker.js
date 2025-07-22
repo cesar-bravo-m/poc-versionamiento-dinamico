@@ -104,13 +104,11 @@ self.addEventListener('connect', async (event) => {
                 
                 await sqlite3.exec(db, `UPDATE derivaciones SET estado = '${estado}', observaciones = '${observaciones}', nombrePaciente = '${nombrePaciente}', rutPaciente = '${rutPaciente}', nombreFuncionario = '${nombreFuncionario}', rutFuncionario = '${rutFuncionario}' WHERE id = ${id}`)
                 
-                // Notify all connected ports about the update
                 const updateMessage = {type: 'derivacionActualizada', id, estado, observaciones, nombrePaciente, rutPaciente, nombreFuncionario, rutFuncionario}
                 ports.forEach(p => {
                     try {
                         p.postMessage(updateMessage)
                     } catch (e) {
-                        // Remove disconnected ports
                         const index = ports.indexOf(p)
                         if (index > -1) {
                             ports.splice(index, 1)
