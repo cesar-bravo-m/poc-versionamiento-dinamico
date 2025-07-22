@@ -223,6 +223,26 @@ body {
   background: #fef2f2;
 }
 
+.api-call-item.bundled {
+  border: 2px solid #8b5cf6;
+  background: #faf5ff;
+}
+
+.api-call-item.bundled.pending {
+  border-color: #8b5cf6;
+  background: linear-gradient(90deg, #faf5ff 0%, #f3e8ff 100%);
+}
+
+.api-call-item.bundled.completed {
+  border-color: #10b981;
+  background: linear-gradient(90deg, #f0fdf4 0%, #dcfce7 100%);
+}
+
+.api-call-item.bundled.failed {
+  border-color: #ef4444;
+  background: linear-gradient(90deg, #fef2f2 0%, #fee2e2 100%);
+}
+
 .api-call-content {
   display: flex;
   flex-direction: column;
@@ -292,6 +312,34 @@ body {
   color: #94a3b8;
   font-size: 0.7rem;
   font-family: monospace;
+}
+
+.api-call-bundle-info {
+  color: #8b5cf6;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-style: italic;
+  margin: 0.25rem 0;
+}
+
+.api-call-referrals-list {
+  margin: 0.5rem 0;
+  padding: 0.5rem;
+  background: rgba(139, 92, 246, 0.1);
+  border-radius: 4px;
+  border-left: 2px solid #8b5cf6;
+}
+
+.api-call-referral-item {
+  font-size: 0.75rem;
+  color: #475569;
+  margin: 0.25rem 0;
+  padding: 0.25rem 0;
+  border-bottom: 1px solid rgba(139, 92, 246, 0.2);
+}
+
+.api-call-referral-item:last-child {
+  border-bottom: none;
 }
 
 .no-api-calls {

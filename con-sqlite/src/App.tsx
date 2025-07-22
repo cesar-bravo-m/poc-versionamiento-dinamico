@@ -31,10 +31,17 @@ function App() {
   const [referrals, setReferrals] = useState<Referral[]>([])
   const [editingId, setEditingId] = useState<number | null>(null)
   const [editingReferral, setEditingReferral] = useState<Referral | null>(null)
-  const [apiCalls, setApiCalls] = useState<{id: string, referralId: number, timestamp: Date, status: 'pending' | 'completed' | 'failed'}[]>([])
+  const [apiCalls, setApiCalls] = useState<{id: string, referralIds: number[], timestamp: Date, status: 'pending' | 'completed' | 'failed', isBundled?: boolean, totalEdits?: number}[]>([])
   const [expandedReferrals, setExpandedReferrals] = useState<Set<number>>(new Set([1, 2, 3]))
+  const [globalTimeout, setGlobalTimeout] = useState<number | null>(null)
+  const [pendingReferrals, setPendingReferrals] = useState<Set<number>>(new Set()) // All referrals with pending changes
 
   const thisTabIsActive = tabId === activeTabId
+
+  // Debug: Log pending referrals changes
+  useEffect(() => {
+    console.log('Pending referrals changed:', Array.from(pendingReferrals))
+  }, [pendingReferrals])
 
   useEffect(() => {
     const connection = new signalR.HubConnectionBuilder()
@@ -161,31 +168,45 @@ function App() {
     setEditingReferral(null)
   }
 
-  const createApiCall = (referralId: number) => {
+  const createGlobalApiCall = () => {
     if (!thisTabIsActive) return // Only create API calls for active tab
     
-    const callId = Math.random().toString(36).substr(2, 9)
-    const newCall = {
-      id: callId,
-      referralId,
-      timestamp: new Date(),
-      status: 'pending' as const
-    }
-    
-    setApiCalls(prev => [...prev, newCall])
-    
-    const timeout = Math.random() * 3000 + 2000
-    setTimeout(() => {
-      const success = true;
-      setApiCalls(prev => prev.map(call => 
-        call.id === callId 
-          ? { ...call, status: success ? 'completed' : 'failed' }
-          : call
-      ))
+    // Use functional update to get the latest pending referrals
+    setPendingReferrals(currentPending => {
+      const referralIds = Array.from(currentPending)
+      console.log('Creating global API call for referrals:', referralIds) // Debug log
+      
+      if (referralIds.length === 0) return currentPending // No pending referrals
+      
+      const callId = Math.random().toString(36).substr(2, 9)
+      const isBundled = referralIds.length > 1
+      const newCall = {
+        id: callId,
+        referralIds,
+        timestamp: new Date(),
+        status: 'pending' as const,
+        isBundled,
+        totalEdits: referralIds.length
+      }
+      
+      setApiCalls(prev => [...prev, newCall])
+      
+      const timeout = Math.random() * 3000 + 2000
       setTimeout(() => {
-        setApiCalls(prev => prev.filter(call => call.id !== callId))
-      }, 3000)
-    }, timeout)
+        const success = true;
+        setApiCalls(prev => prev.map(call => 
+          call.id === callId 
+            ? { ...call, status: success ? 'completed' : 'failed' }
+            : call
+        ))
+        setTimeout(() => {
+          setApiCalls(prev => prev.filter(call => call.id !== callId))
+        }, 3000)
+      }, timeout)
+      
+      // Clear pending referrals since we're now syncing
+      return new Set()
+    })
   }
 
   const saveChanges = () => {
@@ -202,9 +223,24 @@ function App() {
       })
       
       const referralId = editingReferral.id
-      setTimeout(() => {
-        createApiCall(referralId)
-      }, 3000)
+      
+      if (globalTimeout) {
+        clearTimeout(globalTimeout)
+        setGlobalTimeout(null)
+      }
+      
+      setPendingReferrals(prev => {
+        const newSet = new Set([...prev, referralId])
+        console.log('Updated pending referrals:', Array.from(newSet)) // Debug log
+        return newSet
+      })
+      
+      const timeoutId = setTimeout(() => {
+        createGlobalApiCall()
+        setGlobalTimeout(null)
+      }, 5000)
+      
+      setGlobalTimeout(timeoutId)
     }
   }
 
@@ -279,9 +315,9 @@ function App() {
               <div className="persistence-queue">
                 {thisTabIsActive && apiCalls.length > 0 ? (
                   apiCalls.map((call) => {
-                    const referral = referrals.find(r => r.id === call.referralId)
+                    const affectedReferrals = referrals.filter(r => call.referralIds.includes(r.id))
                     return (
-                      <div key={call.id} className={`api-call-item ${call.status}`}>
+                      <div key={call.id} className={`api-call-item ${call.status} ${call.isBundled ? 'bundled' : ''}`}>
                         <div className="api-call-content">
                           <div className="api-call-header">
                             <span className="api-call-icon">
@@ -290,14 +326,34 @@ function App() {
                               {call.status === 'failed' && 'ERR'}
                             </span>
                             <span className="api-call-text">
-                              {call.status === 'pending' && 'Sincronizando...'}
-                              {call.status === 'completed' && 'Sincronizado'}
-                              {call.status === 'failed' && 'Error'}
+                              {call.isBundled && call.status === 'pending' && `Sincronizando ${call.totalEdits} derivaciones...`}
+                              {call.isBundled && call.status === 'completed' && `${call.totalEdits} derivaciones sincronizadas`}
+                              {call.isBundled && call.status === 'failed' && `Error: ${call.totalEdits} derivaciones`}
+                              {!call.isBundled && call.status === 'pending' && 'Sincronizando...'}
+                              {!call.isBundled && call.status === 'completed' && 'Sincronizado'}
+                              {!call.isBundled && call.status === 'failed' && 'Error'}
                             </span>
                           </div>
                           <div className="api-call-details">
-                            <div className="api-call-patient">{referral?.nombrePaciente}</div>
-                            <div className="api-call-specialty">{referral?.especialidad}</div>
+                            {call.isBundled ? (
+                              <div>
+                                <div className="api-call-bundle-info">
+                                  Sincronización global de {call.totalEdits} derivaciones
+                                </div>
+                                <div className="api-call-referrals-list">
+                                  {affectedReferrals.map((ref) => (
+                                    <div key={ref.id} className="api-call-referral-item">
+                                      {ref.nombrePaciente} ({ref.especialidad})
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            ) : (
+                              <div>
+                                <div className="api-call-patient">{affectedReferrals[0]?.nombrePaciente}</div>
+                                <div className="api-call-specialty">{affectedReferrals[0]?.especialidad}</div>
+                              </div>
+                            )}
                             <div className="api-call-timestamp">
                               {call.timestamp.toLocaleTimeString()}
                             </div>
