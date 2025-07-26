@@ -1,0 +1,45 @@
+{
+  "Files": [
+    {
+      "Id": "C:\\Code\\microfrontend\\poc-versionamiento-dinamico\\version-backend\\SignalRWebpack\\wwwroot\\css\\main.4274c8affc5c5c775679.css",
+      "PackagePath": "staticwebassets\\css\\main.4274c8affc5c5c775679.css"
+    },
+    {
+      "Id": "C:\\Code\\microfrontend\\poc-versionamiento-dinamico\\version-backend\\SignalRWebpack\\wwwroot\\css\\main.d7bec79503095b34ba07.css",
+      "PackagePath": "staticwebassets\\css\\main.d7bec79503095b34ba07.css"
+    },
+    {
+      "Id": "C:\\Code\\microfrontend\\poc-versionamiento-dinamico\\version-backend\\SignalRWebpack\\wwwroot\\dictation.html",
+      "PackagePath": "staticwebassets\\dictation.html"
+    },
+    {
+      "Id": "C:\\Code\\microfrontend\\poc-versionamiento-dinamico\\version-backend\\SignalRWebpack\\wwwroot\\index.html",
+      "PackagePath": "staticwebassets\\index.html"
+    },
+    {
+      "Id": "C:\\Code\\microfrontend\\poc-versionamiento-dinamico\\version-backend\\SignalRWebpack\\wwwroot\\main.4274c8affc5c5c775679.js",
+      "PackagePath": "staticwebassets\\main.4274c8affc5c5c775679.js"
+    },
+    {
+      "Id": "C:\\Code\\microfrontend\\poc-versionamiento-dinamico\\version-backend\\SignalRWebpack\\wwwroot\\main.d7bec79503095b34ba07.js",
+      "PackagePath": "staticwebassets\\main.d7bec79503095b34ba07.js"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.SignalRWebpack.Microsoft.AspNetCore.StaticWebAssets.props",
+      "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssets.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.build.SignalRWebpack.props",
+      "PackagePath": "build\\SignalRWebpack.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.buildMultiTargeting.SignalRWebpack.props",
+      "PackagePath": "buildMultiTargeting\\SignalRWebpack.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.buildTransitive.SignalRWebpack.props",
+      "PackagePath": "buildTransitive\\SignalRWebpack.props"
+    }
+  ],
+  "ElementsToRemove": []
+}

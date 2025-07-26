@@ -73,6 +73,7 @@ self.addEventListener('connect', async (event) => {
     await initializeDatabase()
     
     port.addEventListener('message', async (event) => {
+        console.log("### message worker 2" ,event);
         try {
             const { type } = event.data
             
@@ -134,6 +135,10 @@ self.addEventListener('connect', async (event) => {
                         }
                     }
                 })
+            } else if (type === 'persistToFile') {
+                ports.forEach(p => p.postMessage({type: 'log', log: '### persistiendo a archivo'}))
+                // TODOCB implementar OPFS
+                // https://developer.mozilla.org/en-US/docs/Web/API/File_System_API/Origin_private_file_system
             }
         } catch (e) {
             console.log("### SharedWorker error", e)

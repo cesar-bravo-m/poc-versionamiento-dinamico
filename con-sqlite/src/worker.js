@@ -74,6 +74,7 @@ self.addEventListener('connect', async (event) => {
     await initializeDatabase()
     
     port.addEventListener('message', async (event) => {
+        console.log("### message worker 1" ,event);
         try {
             const { type } = event.data
             

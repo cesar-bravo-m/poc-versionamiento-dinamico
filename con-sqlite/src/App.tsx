@@ -25,6 +25,7 @@ type Referral = {
 
 function App() {
   const [sqlWorker, setSqlWorker] = useState<SharedWorker | null>(null)
+  const [opfsWorker, setOpfsWorker] = useState<Worker | null>(null)
   const [activeTabId, setActiveTabId] = useState<string | null>(null)
   const [tabId, setTabId] = useState<string | null>(null)
   const [parametros, setParametros] = useState<Parametro[]>([])
@@ -38,6 +39,14 @@ function App() {
   const [waitingForSync, setWaitingForSync] = useState<{timestamp: Date, referralCount: number} | null>(null)
 
   const thisTabIsActive = tabId === activeTabId
+
+  useEffect(() => {
+    const worker = new Worker(new URL('./opfsWorker.js', import.meta.url), { type: 'module' })
+    worker.addEventListener('message', (event) => {
+      console.log("### OPFS event", event);
+    })
+    setOpfsWorker(worker)
+  }, [])
 
   useEffect(() => {
     console.log('Pending referrals changed:', Array.from(pendingReferrals))
@@ -80,6 +89,7 @@ function App() {
     const worker = new SharedWorker(new URL('./sqlWorker.js', import.meta.url), { type: 'module' })
     
     worker.port.addEventListener('message', (event) => {
+      console.log("### event:", event);
       if (event.data.type === 'derivacionesObtenidas') {
         const newReferrals: Referral[] = []
         for (const row of event.data.derivaciones) {
@@ -129,6 +139,8 @@ function App() {
         setEditingReferral(null)
       } else if (event.data.type === 'parametrosActualizados') {
         console.log('Parameters updated in database:', event.data.parametros)
+      } else if (event.data.type === 'log') {
+        // console.log("### event.data.log", event.data.log);
       }
     })
     
@@ -148,6 +160,12 @@ function App() {
 
   const obtenerDerivaciones = () => {
     sqlWorker?.port.postMessage({type: 'obtenerDerivaciones' })
+  }
+
+  const escribirArchivo = () => {
+    // NO FUNCIONA EN UN SHARED WORKER@!@!!
+    // sqlWorker?.port.postMessage({type: 'persistToFile' })
+    opfsWorker?.postMessage({type: 'persistToFile' })
   }
 
   const fetchParametrosFromEndpoint = async () => {
@@ -359,7 +377,7 @@ function App() {
 
       <div className="main-content">
         <div className="sidebar">
-                      <div className="sidebar-section">
+            <div className="sidebar-section">
               <h3>PARÁMETROS DEL NODO</h3>
               <div className="parameters-list">
                 {parametros.map((param, index) => (
@@ -380,11 +398,14 @@ function App() {
                 <button onClick={obtenerDerivaciones} className="queue-button">
                   Obtener Derivaciones
                 </button>
+                <button onClick={() => {console.log("### here"); escribirArchivo(); console.log("### here 2");}} className="queue-button">
+                  Escribir a OPFS
+                </button>
               </div>
             </div>
 
             <div className="sidebar-section">
-              <h3>COLA DE PERSISTENCIA</h3>
+              <h3>COLA DE EVENTOS (API, OPFS)</h3>
               <div className="persistence-queue">
                 {thisTabIsActive && waitingForSync && (
                   <div className="waiting-indicator">
